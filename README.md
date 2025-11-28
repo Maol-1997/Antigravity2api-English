@@ -4,148 +4,148 @@
   <img src="client/public/rocket.svg" width="120" alt="Antigravity Logo" />
   <h3>Google Antigravity API to OpenAI Proxy</h3>
   <p>
-    将 Google Antigravity API 转换为 OpenAI 兼容格式的高性能网关服务。
+    A high-performance gateway that converts Google Antigravity API to OpenAI-compatible format.
     <br />
-    内置现代化管理后台，支持多账号轮询、Token 自动刷新、密钥管理与实时监控。
+    Features a modern admin dashboard with multi-account rotation, automatic token refresh, API key management, and real-time monitoring.
   </p>
   <p>
     <a href="https://github.com/liuw1535/antigravity2api-nodejs">
-      <img src="https://img.shields.io/badge/原项目-liuw1535/antigravity2api--nodejs-blue?style=flat-square&logo=github" alt="Original Project" />
+      <img src="https://img.shields.io/badge/Original_Project-liuw1535/antigravity2api--nodejs-blue?style=flat-square&logo=github" alt="Original Project" />
     </a>
   </p>
 </div>
 
 > [!NOTE]
-> 本项目基于 [liuw1535/antigravity2api-nodejs](https://github.com/liuw1535/antigravity2api-nodejs) 进行开发和优化。
+> This project is based on [liuw1535/antigravity2api-nodejs](https://github.com/liuw1535/antigravity2api-nodejs) with additional development and optimizations.
 
 ---
 
-## ⚠️ 重要提示
+## ⚠️ Important Notice
 
 > [!WARNING]
-> **使用风险警告**
-> - 本项目仅供学习与技术研究，请勿用于商业用途或违反服务条款的场景
-> - 使用本项目可能违反 Google 服务条款，存在账号被封禁的风险
-> - 请妥善保管 `data/accounts.json` 文件，其中包含敏感的访问凭证
-> - 建议不要将账号数据文件提交到版本控制系统或公开分享
-> - 使用者需自行承担因使用本项目而产生的一切后果
+> **Usage Risk Warning**
+> - This project is for learning and technical research only. Do not use for commercial purposes or scenarios that violate terms of service
+> - Using this project may violate Google's Terms of Service and carries the risk of account suspension
+> - Keep your `data/accounts.json` file secure as it contains sensitive access credentials
+> - Do not commit account data files to version control or share them publicly
+> - Users assume all responsibility for any consequences arising from the use of this project
 
 ---
 
-## ✨ 功能特性
+## ✨ Features
 
-### 核心功能
-- **OpenAI 兼容**: 完全兼容 OpenAI Chat Completions API 格式，无缝对接现有生态。
-- **流式响应**: 支持 SSE (Server-Sent Events) 流式输出，体验流畅。
-- **多模态支持**: 支持文本及 Base64 编码的图片输入 (GPT-4 Vision 兼容)。
-- **工具调用**: 支持 Function Calling，扩展模型能力。
+### Core Features
+- **OpenAI Compatible**: Fully compatible with OpenAI Chat Completions API format, seamlessly integrating with existing ecosystems
+- **Streaming Response**: Supports SSE (Server-Sent Events) streaming output for a smooth experience
+- **Multimodal Support**: Supports text and Base64-encoded image input (GPT-4 Vision compatible)
+- **Tool Calling**: Supports Function Calling to extend model capabilities
 
-### 增强特性
-- **多账号池**: 支持配置多个 Google 账号，自动负载均衡与轮询。
-- **Token 自动保活**: 内置 Token 刷新机制，自动处理过期与 403 错误。
-- **高并发支持**: 优化的请求处理队列，支持高并发场景。
+### Enhanced Features
+- **Multi-Account Pool**: Configure multiple Google accounts with automatic load balancing and rotation
+- **Automatic Token Refresh**: Built-in token refresh mechanism that automatically handles expiration and 403 errors
+- **High Concurrency Support**: Optimized request processing queue for high-concurrency scenarios
 
-### 管理后台 (Dashboard)
-- **现代化 UI**: 基于 React + Tailwind CSS 构建的极简主义设计风格。
-- **密钥管理**: 创建、删除、禁用 API Key，支持设置额度与过期时间。
-- **Token 管理**: 可视化管理 Google 账号，实时查看 Token 状态。
-- **系统监控**: 实时监控 CPU、内存、请求数与响应时间。
-- **在线测试**: 内置 Chat 调试界面，方便测试模型效果。
-- **日志审计**: 完整的请求日志记录与查询。
+### Admin Dashboard
+- **Modern UI**: Minimalist design built with React + Tailwind CSS
+- **Key Management**: Create, delete, and disable API keys with quota and expiration settings
+- **Token Management**: Visual management of Google accounts with real-time token status
+- **System Monitoring**: Real-time monitoring of CPU, memory, request count, and response time
+- **Online Testing**: Built-in chat debugging interface for testing model performance
+- **Log Auditing**: Complete request logging and querying
 
-## 🛠️ 技术栈
+## 🛠️ Tech Stack
 
-- **后端**: Node.js (Express), Native Fetch
-- **前端**: React, Vite, Tailwind CSS, Framer Motion, Lucide React
-- **数据存储**: 本地 JSON 文件存储 (轻量级，无外部数据库依赖)
+- **Backend**: Node.js (Express), Native Fetch
+- **Frontend**: React, Vite, Tailwind CSS, Framer Motion, Lucide React
+- **Data Storage**: Local JSON file storage (lightweight, no external database dependency)
 
-## 🚀 快速开始
+## 🚀 Quick Start
 
-### 环境要求
+### Requirements
 - Node.js >= 18.0.0
 
-### 1. 安装与构建
+### 1. Installation and Build
 
 ```bash
-# 安装项目依赖
+# Install project dependencies
 npm install
 
-# 构建前端资源
+# Build frontend assets
 npm run build
 ```
 
-### 2. 配置服务
+### 2. Configuration
 
-编辑根目录下的 `config.json` 文件：
+Edit the `config.json` file in the root directory:
 
 ```json
 {
   "server": {
-    "port": 8045,           // 服务端口
-    "host": "0.0.0.0"       // 监听地址
+    "port": 8045,           // Server port
+    "host": "0.0.0.0"       // Listen address
   },
   "security": {
-    "apiKey": "sk-admin",   // 管理员/默认 API Key
-    "maxRequestSize": "50mb" // 最大请求体大小
+    "apiKey": "sk-admin",   // Admin/default API Key
+    "maxRequestSize": "50mb" // Maximum request body size
   },
   "defaults": {
-    "model": "gemini-2.0-flash-exp" // 默认模型
+    "model": "gemini-2.0-flash-exp" // Default model
   }
 }
 ```
 
-### 3. 添加 Google 账号
+### 3. Add Google Account
 
-运行 OAuth 登录脚本获取 Access Token：
+Run the OAuth login script to obtain an Access Token:
 
 ```bash
 npm run login
 ```
 
-按提示在浏览器中授权，获取的 Token 将自动保存到 `data/accounts.json`。
+Follow the prompts to authorize in your browser. The obtained token will be automatically saved to `data/accounts.json`.
 
 > [!CAUTION]
-> **数据安全警告**
-> - `data/accounts.json` 文件包含您的 Google 账号访问令牌,具有高度敏感性
-> - 请确保该文件权限设置正确 (建议 chmod 600)，仅所有者可读写
-> - **切勿**将此文件上传到 GitHub、Gitee 等公开代码仓库
-> - **切勿**与他人分享此文件或将其暴露在公网环境
-> - 定期检查 `.gitignore` 文件，确保 `data/` 目录已被排除
-> - 如发现令牌泄露，请立即在 Google 账号设置中撤销相关应用权限
+> **Data Security Warning**
+> - The `data/accounts.json` file contains your Google account access tokens and is highly sensitive
+> - Ensure proper file permissions (recommended: chmod 600), readable/writable only by owner
+> - **Never** upload this file to public repositories like GitHub or Gitee
+> - **Never** share this file with others or expose it to public networks
+> - Regularly check your `.gitignore` file to ensure the `data/` directory is excluded
+> - If token leakage is discovered, immediately revoke the application permissions in your Google account settings
 
-### 4. 启动服务
+### 4. Start the Service
 
 ```bash
-# 生产模式
+# Production mode
 npm start
 
-# 开发模式 (支持热重载)
+# Development mode (with hot reload)
 npm run dev
 ```
 
-服务启动后，访问 `http://localhost:8045` 进入管理后台。
+After starting, visit `http://localhost:8045` to access the admin dashboard.
 
 > [!TIP]
-> **首次登录提示**
-> - 默认管理密码: `admin123`
-> - 登录后请及时在设置页面修改密码以确保安全
+> **First Login**
+> - Default admin password: `admin123`
+> - Please change the password in the settings page after login to ensure security
 
-## 🔌 API 使用指南
+## 🔌 API Usage Guide
 
-### 基础 URL
+### Base URL
 `http://localhost:8045`
 
-### 认证
-所有请求需在 Header 中携带 API Key：
+### Authentication
+All requests require an API Key in the header:
 `Authorization: Bearer <YOUR_API_KEY>`
 
-### 1. 获取模型列表
+### 1. Get Model List
 `GET /v1/models`
 
-### 2. 聊天补全
+### 2. Chat Completions
 `POST /v1/chat/completions`
 
-**请求示例:**
+**Request Example:**
 ```bash
 curl http://localhost:8045/v1/chat/completions \
   -H "Content-Type: application/json" \
@@ -157,71 +157,71 @@ curl http://localhost:8045/v1/chat/completions \
   }'
 ```
 
-## 📂 项目结构
+## 📂 Project Structure
 
 ```
 .
-├── client/                 # 前端 React 项目
+├── client/                 # Frontend React project
 │   ├── src/
-│   │   ├── components/     # UI 组件
-│   │   ├── pages/          # 页面组件
+│   │   ├── components/     # UI components
+│   │   ├── pages/          # Page components
 │   │   └── ...
 │   └── ...
-├── data/                   # 数据存储目录
-│   ├── accounts.json       # Google 账号数据
-│   ├── keys.json           # API Key 数据
+├── data/                   # Data storage directory
+│   ├── accounts.json       # Google account data
+│   ├── keys.json           # API Key data
 │   └── ...
-├── src/                    # 后端源码
-│   ├── server/             # 服务器入口
-│   ├── api/                # API 路由处理
-│   ├── auth/               # 认证与 Token 管理
+├── src/                    # Backend source code
+│   ├── server/             # Server entry point
+│   ├── api/                # API route handlers
+│   ├── auth/               # Authentication & token management
 │   └── ...
-├── scripts/                # 工具脚本
-├── config.json             # 配置文件
+├── scripts/                # Utility scripts
+├── config.json             # Configuration file
 └── package.json
 ```
 
-## ⚖️ 免责声明
+## ⚖️ Disclaimer
 
-本项目 (Antigravity Gateway) 仅供技术学习、研究和交流使用，开发者不对使用本项目产生的任何后果负责。
+This project (Antigravity Gateway) is for technical learning, research, and educational purposes only. The developers are not responsible for any consequences arising from the use of this project.
 
-### 使用条款
+### Terms of Use
 
-1. **自行承担风险**: 使用者在使用本项目时，需完全理解并接受相关风险，包括但不限于：
-   - Google 账号被暂停、封禁或限制访问
-   - 违反 Google 服务条款可能导致的法律责任
-   - 数据泄露、隐私侵犯等安全风险
-   - 服务不稳定、数据丢失等技术问题
+1. **Use at Your Own Risk**: Users must fully understand and accept the associated risks when using this project, including but not limited to:
+   - Google account suspension, banning, or access restrictions
+   - Legal liability from violating Google's Terms of Service
+   - Security risks such as data leaks and privacy breaches
+   - Technical issues such as service instability and data loss
 
-2. **禁止商业用途**: 本项目严禁用于任何商业用途，包括但不限于：
-   - 提供付费 API 代理服务
-   - 作为商业产品的技术组件
-   - 任何形式的盈利性活动
+2. **No Commercial Use**: This project is strictly prohibited for any commercial purposes, including but not limited to:
+   - Providing paid API proxy services
+   - Using as a component in commercial products
+   - Any form of profit-generating activities
 
-3. **合规使用**: 使用者需确保：
-   - 遵守所在地区的法律法规
-   - 遵守 Google 及相关服务的使用条款
-   - 不利用本项目进行任何违法或侵权行为
+3. **Compliant Use**: Users must ensure:
+   - Compliance with local laws and regulations
+   - Compliance with Google and related service terms of use
+   - No use of this project for illegal or infringing activities
 
-4. **数据安全**: 使用者应当：
-   - 妥善保管账号凭证和敏感数据
-   - 采取适当的安全措施防止数据泄露
-   - 对因疏忽导致的安全问题自行负责
+4. **Data Security**: Users should:
+   - Properly safeguard account credentials and sensitive data
+   - Take appropriate security measures to prevent data leaks
+   - Take responsibility for security issues caused by negligence
 
-5. **无担保声明**: 本项目按 "现状" 提供，不提供任何明示或暗示的担保，包括但不限于：
-   - 适销性担保
-   - 特定用途适用性担保
-   - 不侵权担保
-   - 服务质量或可靠性担保
+5. **No Warranty**: This project is provided "as is" without any express or implied warranties, including but not limited to:
+   - Warranty of merchantability
+   - Warranty of fitness for a particular purpose
+   - Warranty of non-infringement
+   - Warranty of service quality or reliability
 
-### 责任限制
+### Limitation of Liability
 
-在任何情况下，本项目的开发者、贡献者及相关方均不对以下情况承担责任：
-- 因使用或无法使用本项目而产生的任何直接、间接、偶然、特殊或后果性损害
-- 数据丢失、业务中断、利润损失或其他经济损失
-- 第三方的任何索赔或诉讼
+Under no circumstances shall the developers, contributors, or related parties of this project be liable for:
+- Any direct, indirect, incidental, special, or consequential damages arising from the use or inability to use this project
+- Data loss, business interruption, loss of profits, or other economic losses
+- Any third-party claims or lawsuits
 
-**使用本项目即表示您已充分理解并接受上述所有条款。如不同意，请勿使用本项目。**
+**By using this project, you acknowledge that you have fully understood and accepted all of the above terms. If you do not agree, please do not use this project.**
 
 ---
 
@@ -229,4 +229,4 @@ curl http://localhost:8045/v1/chat/completions \
 
 MIT License
 
-本许可证授予的权利和义务不影响上述免责声明的效力。
+The rights and obligations granted by this license do not affect the validity of the above disclaimer.
