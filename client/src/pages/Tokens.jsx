@@ -15,6 +15,9 @@ export default function Tokens() {
     const [manualUrl, setManualUrl] = useState('');
     const [isAdding, setIsAdding] = useState(false);
     const [message, setMessage] = useState({ type: '', content: '' });
+    const [isLoggingIn, setIsLoggingIn] = useState(false);
+    const [isExporting, setIsExporting] = useState(false);
+    const [isImporting, setIsImporting] = useState(false);
 
     const fetchTokens = async () => {
         setIsLoading(true);
@@ -60,6 +63,7 @@ export default function Tokens() {
     }, [adminToken]);
 
     const handleGoogleLogin = async () => {
+        setIsLoggingIn(true);
         try {
             const res = await fetch('/admin/tokens/login', {
                 method: 'POST',
@@ -76,6 +80,8 @@ export default function Tokens() {
             }
         } catch (error) {
             setMessage({ type: 'error', content: 'Request failed: ' + error.message });
+        } finally {
+            setIsLoggingIn(false);
         }
     };
 
@@ -168,6 +174,7 @@ export default function Tokens() {
 
     const exportTokens = async () => {
         if (selectedTokens.size === 0) return alert('Please select accounts to export first');
+        setIsExporting(true);
         try {
             const res = await fetch('/admin/tokens/export', {
                 method: 'POST',
@@ -187,6 +194,8 @@ export default function Tokens() {
             }
         } catch (error) {
             console.error('Export failed', error);
+        } finally {
+            setIsExporting(false);
         }
     };
 
@@ -198,6 +207,7 @@ export default function Tokens() {
             const file = e.target.files[0];
             if (!file) return;
 
+            setIsImporting(true);
             const formData = new FormData();
             formData.append('file', file);
 
@@ -216,6 +226,8 @@ export default function Tokens() {
                 }
             } catch (error) {
                 setMessage({ type: 'error', content: 'Import failed: ' + error.message });
+            } finally {
+                setIsImporting(false);
             }
         };
         input.click();
@@ -244,25 +256,40 @@ export default function Tokens() {
                 <div className="flex flex-wrap gap-4">
                     <button
                         onClick={handleGoogleLogin}
-                        className="flex items-center gap-2 px-5 py-2.5 bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-700 font-medium rounded-xl transition-all shadow-sm hover:shadow-md text-sm"
+                        disabled={isLoggingIn}
+                        className="flex items-center gap-2 px-5 py-2.5 bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-700 font-medium rounded-xl transition-all shadow-sm hover:shadow-md text-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        <LogIn className="w-4 h-4 text-blue-600" />
-                        Google Login
+                        {isLoggingIn ? (
+                            <RefreshCw className="w-4 h-4 text-blue-600 animate-spin" />
+                        ) : (
+                            <LogIn className="w-4 h-4 text-blue-600" />
+                        )}
+                        {isLoggingIn ? 'Loading...' : 'Google Login'}
                     </button>
                     <div className="w-px h-10 bg-zinc-200 hidden md:block" />
                     <button
                         onClick={exportTokens}
-                        className="flex items-center gap-2 px-5 py-2.5 bg-amber-50 hover:bg-amber-100 text-amber-700 font-medium rounded-xl transition-colors text-sm"
+                        disabled={isExporting}
+                        className="flex items-center gap-2 px-5 py-2.5 bg-amber-50 hover:bg-amber-100 text-amber-700 font-medium rounded-xl transition-colors text-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        <Download className="w-4 h-4" />
-                        Export Selected
+                        {isExporting ? (
+                            <RefreshCw className="w-4 h-4 animate-spin" />
+                        ) : (
+                            <Download className="w-4 h-4" />
+                        )}
+                        {isExporting ? 'Exporting...' : 'Export Selected'}
                     </button>
                     <button
                         onClick={importTokens}
-                        className="flex items-center gap-2 px-5 py-2.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-medium rounded-xl transition-colors text-sm"
+                        disabled={isImporting}
+                        className="flex items-center gap-2 px-5 py-2.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-medium rounded-xl transition-colors text-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        <Upload className="w-4 h-4" />
-                        Import
+                        {isImporting ? (
+                            <RefreshCw className="w-4 h-4 animate-spin" />
+                        ) : (
+                            <Upload className="w-4 h-4" />
+                        )}
+                        {isImporting ? 'Importing...' : 'Import'}
                     </button>
                 </div>
 
