@@ -8,14 +8,14 @@
     Features a modern admin dashboard with multi-account rotation, automatic token refresh, API key management, and real-time monitoring.
   </p>
   <p>
-    <a href="https://github.com/liuw1535/antigravity2api-nodejs">
-      <img src="https://img.shields.io/badge/Original_Project-liuw1535/antigravity2api--nodejs-blue?style=flat-square&logo=github" alt="Original Project" />
+    <a href="https://github.com/link0518/Antigravity2api">
+      <img src="https://img.shields.io/badge/Original_Project-link0518/Antigravity2api-blue?style=flat-square&logo=github" alt="Original Project" />
     </a>
   </p>
 </div>
 
 > [!NOTE]
-> This project is based on [liuw1535/antigravity2api-nodejs](https://github.com/liuw1535/antigravity2api-nodejs) with additional development and optimizations.
+> This project is based on [link0518/Antigravity2api](https://github.com/link0518/Antigravity2api) with additional development and optimizations.
 
 ---
 
