@@ -1,7 +1,6 @@
 # Antigravity Gateway
 
 <div align="center">
-  <img src="client/public/rocket.svg" width="120" alt="Antigravity Logo" />
   <h3>Google Antigravity API to OpenAI Proxy</h3>
   <p>
     A high-performance gateway that converts Google Antigravity API to OpenAI-compatible format.
