@@ -4,11 +4,11 @@ import CodeBlock from '../components/CodeBlock';
 import { cn } from '../lib/utils';
 
 export default function Docs() {
-    // 动态获取基础 URL
+    // Dynamically get base URL
     const [baseUrl, setBaseUrl] = useState('');
 
     useEffect(() => {
-        // 获取当前访问的协议、域名/IP 和端口
+        // Get current protocol, domain/IP and port
         const protocol = window.location.protocol; // http: 或 https:
         const host = window.location.host; // 包含域名/IP 和端口
         setBaseUrl(`${protocol}//${host}`);
@@ -17,15 +17,15 @@ export default function Docs() {
     return (
         <div className="space-y-8 max-w-4xl mx-auto pb-12">
             <div>
-                <h2 className="text-2xl font-semibold text-zinc-900 mb-2 tracking-tight">API 文档</h2>
-                <p className="text-zinc-500">Antigravity API 提供与 OpenAI 兼容的接口,可无缝对接现有应用。</p>
+                <h2 className="text-2xl font-semibold text-zinc-900 mb-2 tracking-tight">API Documentation</h2>
+                <p className="text-zinc-500">Antigravity API provides OpenAI-compatible endpoints for seamless integration with existing applications.</p>
             </div>
 
             {/* Base URL */}
             <div className="bg-white rounded-xl border border-zinc-200 p-6 shadow-sm">
                 <h3 className="font-semibold text-zinc-900 mb-4 flex items-center gap-2 text-base">
                     <Globe className="w-5 h-5 text-zinc-900" />
-                    基础 URL
+                    Base URL
                 </h3>
                 <CodeBlock code={baseUrl || 'Loading...'} />
             </div>
@@ -35,8 +35,8 @@ export default function Docs() {
                 <EndpointCard
                     method="GET"
                     path="/v1/models"
-                    title="获取模型列表"
-                    desc="获取所有可用的 AI 模型列表。"
+                    title="Get Model List"
+                    desc="Get a list of all available AI models."
                     req={`curl ${baseUrl}/v1/models \\
   -H "Authorization: Bearer YOUR_API_KEY"`}
                     res={`{
@@ -55,8 +55,8 @@ export default function Docs() {
                 <EndpointCard
                     method="POST"
                     path="/v1/chat/completions"
-                    title="聊天补全"
-                    desc="创建聊天对话补全,支持流式和非流式响应。"
+                    title="Chat Completions"
+                    desc="Create chat conversation completions, supports streaming and non-streaming responses."
                     req={`curl ${baseUrl}/v1/chat/completions \\
   -H "Content-Type: application/json" \\
   -H "Authorization: Bearer YOUR_API_KEY" \\
@@ -78,10 +78,10 @@ data: [DONE]`}
                 <div className="bg-white rounded-xl border border-zinc-200 p-6 shadow-sm">
                     <h3 className="font-semibold text-zinc-900 mb-4 flex items-center gap-2 text-base">
                         <Shield className="w-5 h-5 text-zinc-900" />
-                        认证方式
+                        Authentication
                     </h3>
                     <p className="text-zinc-600 text-sm mb-4 leading-relaxed">
-                        所有 API 请求都需要在请求头中包含有效的 API 密钥:
+                        All API requests require a valid API key in the request header:
                     </p>
                     <CodeBlock code="Authorization: Bearer YOUR_API_KEY" />
                 </div>
@@ -89,15 +89,15 @@ data: [DONE]`}
                 <div className="bg-white rounded-xl border border-zinc-200 p-6 shadow-sm">
                     <h3 className="font-semibold text-zinc-900 mb-4 flex items-center gap-2 text-base">
                         <Zap className="w-5 h-5 text-zinc-900" />
-                        频率限制
+                        Rate Limiting
                     </h3>
                     <p className="text-zinc-600 text-sm mb-4 leading-relaxed">
-                        当请求超过频率限制时,API 会返回 429 状态码。响应头包含限制详情:
+                        When requests exceed rate limits, the API returns status code 429. Response headers contain limit details:
                     </p>
                     <ul className="text-sm text-zinc-500 space-y-2 list-disc list-inside marker:text-zinc-300">
-                        <li><code className="bg-zinc-100 px-1.5 py-0.5 rounded text-zinc-700 border border-zinc-200">X-RateLimit-Limit</code>: 最大请求数</li>
-                        <li><code className="bg-zinc-100 px-1.5 py-0.5 rounded text-zinc-700 border border-zinc-200">X-RateLimit-Remaining</code>: 剩余请求数</li>
-                        <li><code className="bg-zinc-100 px-1.5 py-0.5 rounded text-zinc-700 border border-zinc-200">X-RateLimit-Reset</code>: 重置等待秒数</li>
+                        <li><code className="bg-zinc-100 px-1.5 py-0.5 rounded text-zinc-700 border border-zinc-200">X-RateLimit-Limit</code>: Max requests</li>
+                        <li><code className="bg-zinc-100 px-1.5 py-0.5 rounded text-zinc-700 border border-zinc-200">X-RateLimit-Remaining</code>: Remaining requests</li>
+                        <li><code className="bg-zinc-100 px-1.5 py-0.5 rounded text-zinc-700 border border-zinc-200">X-RateLimit-Reset</code>: Seconds until reset</li>
                     </ul>
                 </div>
             </div>

@@ -12,39 +12,114 @@ const CLIENT_SECRET = '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';
 class TokenManager {
   constructor(filePath = path.join(__dirname,'..','..','data' ,'accounts.json')) {
     this.filePath = filePath;
+    this.quotaFilePath = path.join(__dirname,'..','..','data' ,'quota_cooldowns.json');
     this.tokens = [];
     this.currentIndex = 0;
     this.lastLoadTime = 0;
-    this.loadInterval = 60000; // 1分钟内不重复加载
-    this.cachedData = null; // 缓存文件数据，减少磁盘读取
-    this.usageStats = new Map(); // Token 使用统计 { refresh_token -> { requests, lastUsed } }
+    this.loadInterval = 60000; // Don't reload within 1 minute
+    this.cachedData = null; // Cache file data, reduce disk reads
+    this.usageStats = new Map(); // Token usage stats { refresh_token -> { requests, lastUsed } }
+    this.quotaCooldowns = new Map(); // Quota cooldowns { "refresh_token:model" -> resetTimestamp }
     this.loadTokens();
+    this.loadQuotaCooldowns();
   }
 
   loadTokens() {
     try {
-      // 避免频繁加载，1分钟内使用缓存
+      // Avoid frequent loading, use cache within 1 minute
       if (Date.now() - this.lastLoadTime < this.loadInterval && this.tokens.length > 0) {
         return;
       }
 
-      log.info('正在加载token...');
+      log.info('Loading tokens...');
       const data = fs.readFileSync(this.filePath, 'utf8');
       const tokenArray = JSON.parse(data);
-      this.cachedData = tokenArray; // 缓存原始数据
+      this.cachedData = tokenArray; // Cache raw data
       this.tokens = tokenArray.filter(token => token.enable !== false);
       this.currentIndex = 0;
       this.lastLoadTime = Date.now();
-      log.info(`成功加载 ${this.tokens.length} 个可用token`);
+      log.info(`Successfully loaded ${this.tokens.length} available tokens`);
 
-      // 触发垃圾回收（如果可用）
+      // Trigger garbage collection (if available)
       if (global.gc) {
         global.gc();
       }
     } catch (error) {
-      log.error('加载token失败:', error.message);
+      log.error('Failed to load tokens:', error.message);
       this.tokens = [];
     }
+  }
+
+  loadQuotaCooldowns() {
+    try {
+      if (fs.existsSync(this.quotaFilePath)) {
+        const data = fs.readFileSync(this.quotaFilePath, 'utf8');
+        const cooldowns = JSON.parse(data);
+        this.quotaCooldowns = new Map(Object.entries(cooldowns));
+        // Clean up expired cooldowns
+        const now = Date.now();
+        for (const [key, resetTime] of this.quotaCooldowns) {
+          if (resetTime <= now) {
+            this.quotaCooldowns.delete(key);
+          }
+        }
+        this.saveQuotaCooldowns();
+      }
+    } catch (error) {
+      log.error('Failed to load quota cooldowns:', error.message);
+    }
+  }
+
+  saveQuotaCooldowns() {
+    try {
+      const obj = Object.fromEntries(this.quotaCooldowns);
+      fs.writeFileSync(this.quotaFilePath, JSON.stringify(obj, null, 2), 'utf8');
+    } catch (error) {
+      log.error('Failed to save quota cooldowns:', error.message);
+    }
+  }
+
+  setQuotaCooldown(token, model, resetTimestamp) {
+    const key = `${token.refresh_token}:${model}`;
+    this.quotaCooldowns.set(key, resetTimestamp);
+    this.saveQuotaCooldowns();
+    const resetDate = new Date(resetTimestamp);
+    log.warn(`⏳ Token quota exhausted for model ${model}, will reset at ${resetDate.toLocaleTimeString()}`);
+  }
+
+  isTokenInCooldown(token, model) {
+    const key = `${token.refresh_token}:${model}`;
+    const resetTime = this.quotaCooldowns.get(key);
+    if (!resetTime) return false;
+    if (Date.now() >= resetTime) {
+      this.quotaCooldowns.delete(key);
+      this.saveQuotaCooldowns();
+      return false;
+    }
+    return true;
+  }
+
+  getTokenCooldownInfo(token, model) {
+    const key = `${token.refresh_token}:${model}`;
+    const resetTime = this.quotaCooldowns.get(key);
+    if (!resetTime || Date.now() >= resetTime) return null;
+    return {
+      resetTime,
+      remainingMs: resetTime - Date.now()
+    };
+  }
+
+  formatDuration(ms) {
+    const totalSeconds = Math.ceil(ms / 1000);
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+
+    const parts = [];
+    if (hours > 0) parts.push(`${hours}h`);
+    if (minutes > 0) parts.push(`${minutes}m`);
+    if (seconds > 0 || parts.length === 0) parts.push(`${seconds}s`);
+    return parts.join(' ');
   }
 
   isExpired(token) {
@@ -54,7 +129,7 @@ class TokenManager {
   }
 
   async refreshToken(token) {
-    log.info('正在刷新token...');
+    log.info('Refreshing token...');
     const body = new URLSearchParams({
       client_id: CLIENT_ID,
       client_secret: CLIENT_SECRET,
@@ -88,7 +163,7 @@ class TokenManager {
 
   saveToFile() {
     try {
-      // 使用缓存数据，减少磁盘读取
+      // Use cached data, reduce disk reads
       let allTokens = this.cachedData;
       if (!allTokens) {
         const data = fs.readFileSync(this.filePath, 'utf8');
@@ -101,26 +176,38 @@ class TokenManager {
       });
 
       fs.writeFileSync(this.filePath, JSON.stringify(allTokens, null, 2), 'utf8');
-      this.cachedData = allTokens; // 更新缓存
+      this.cachedData = allTokens; // Update cache
     } catch (error) {
-      log.error('保存文件失败:', error.message);
+      log.error('Failed to save file:', error.message);
     }
   }
 
   disableToken(token) {
-    log.warn(`禁用token`)
+    log.warn(`Disabling token`)
     token.enable = false;
     this.saveToFile();
     this.loadTokens();
   }
 
-  async getToken() {
+  async getToken(model = null) {
     this.loadTokens();
     if (this.tokens.length === 0) return null;
+
+    let skippedDueToCooldown = 0;
 
     for (let i = 0; i < this.tokens.length; i++) {
       const token = this.tokens[this.currentIndex];
       const tokenIndex = this.currentIndex;
+
+      // Check if token is in cooldown for this model
+      if (model && this.isTokenInCooldown(token, model)) {
+        const cooldownInfo = this.getTokenCooldownInfo(token, model);
+        const remainingFormatted = this.formatDuration(cooldownInfo.remainingMs);
+        log.info(`⏭️ Skipping Token #${tokenIndex} (quota cooldown for ${model}, ${remainingFormatted} remaining)`);
+        skippedDueToCooldown++;
+        this.currentIndex = (this.currentIndex + 1) % this.tokens.length;
+        continue;
+      }
 
       try {
         if (this.isExpired(token)) {
@@ -128,27 +215,43 @@ class TokenManager {
         }
         this.currentIndex = (this.currentIndex + 1) % this.tokens.length;
 
-        // 记录使用统计
+        // Record usage stats
         this.recordUsage(token);
-        log.info(`🔄 轮询使用 Token #${tokenIndex} (总请求: ${this.getTokenRequests(token)})`);
+        log.info(`🔄 Round-robin using Token #${tokenIndex} (total requests: ${this.getTokenRequests(token)})`);
 
         return token;
       } catch (error) {
         if (error.statusCode === 403) {
-          log.warn(`Token ${this.currentIndex} 刷新失败(403)，禁用并尝试下一个`);
+          log.warn(`Token ${this.currentIndex} refresh failed (403), disabling and trying next`);
           this.disableToken(token);
         } else {
-          log.error(`Token ${this.currentIndex} 刷新失败:`, error.message);
+          log.error(`Token ${this.currentIndex} refresh failed:`, error.message);
         }
         this.currentIndex = (this.currentIndex + 1) % this.tokens.length;
         if (this.tokens.length === 0) return null;
       }
     }
 
+    // All tokens are either disabled or in cooldown
+    if (skippedDueToCooldown === this.tokens.length) {
+      // Find the token with the shortest cooldown
+      let shortestCooldown = null;
+      for (const token of this.tokens) {
+        const info = this.getTokenCooldownInfo(token, model);
+        if (info && (!shortestCooldown || info.remainingMs < shortestCooldown.remainingMs)) {
+          shortestCooldown = { token, ...info };
+        }
+      }
+      if (shortestCooldown) {
+        const resetDate = new Date(shortestCooldown.resetTime);
+        throw new Error(`All tokens are in quota cooldown for model ${model}. Shortest reset at ${resetDate.toLocaleTimeString()}`);
+      }
+    }
+
     return null;
   }
 
-  // 记录 Token 使用
+  // Record token usage
   recordUsage(token) {
     const key = token.refresh_token;
     if (!this.usageStats.has(key)) {
@@ -159,13 +262,13 @@ class TokenManager {
     stats.lastUsed = Date.now();
   }
 
-  // 获取单个 Token 的请求次数
+  // Get request count for single token
   getTokenRequests(token) {
     const stats = this.usageStats.get(token.refresh_token);
     return stats ? stats.requests : 0;
   }
 
-  // 获取所有 Token 的使用统计
+  // Get usage stats for all tokens
   getUsageStats() {
     const stats = [];
     this.tokens.forEach((token, index) => {
@@ -194,20 +297,20 @@ class TokenManager {
 
   async handleRequestError(error, currentAccessToken) {
     if (error.statusCode === 403) {
-      log.warn('请求遇到403错误，尝试刷新token');
+      log.warn('Request encountered 403 error, trying to refresh token');
       const currentToken = this.tokens[this.currentIndex];
       if (currentToken && currentToken.access_token === currentAccessToken) {
         try {
           await this.refreshToken(currentToken);
-          log.info('Token刷新成功，返回新token');
+          log.info('Token refresh successful, returning new token');
           return currentToken;
         } catch (refreshError) {
           if (refreshError.statusCode === 403) {
-            log.warn('刷新token也遇到403，禁用并切换到下一个');
+            log.warn('Token refresh also encountered 403, disabling and switching to next');
             this.disableToken(currentToken);
             return await this.getToken();
           }
-          log.error('刷新token失败:', refreshError.message);
+          log.error('Token refresh failed:', refreshError.message);
         }
       }
       return await this.getToken();

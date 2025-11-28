@@ -36,7 +36,7 @@ export default function Keys() {
             setKeys(data);
         } catch (error) {
             console.error('Failed to fetch keys', error);
-            setMessage({ type: 'error', content: '加载密钥失败' });
+            setMessage({ type: 'error', content: 'Failed to load keys' });
         } finally {
             setIsLoading(false);
         }
@@ -69,16 +69,16 @@ export default function Keys() {
 
             const data = await res.json();
             if (data.key) {
-                setMessage({ type: 'success', content: '密钥生成成功' });
+                setMessage({ type: 'success', content: 'Key generated successfully' });
                 setKeyName('');
                 setCustomKey('');
                 setEnableRateLimit(false);
                 fetchKeys();
             } else {
-                setMessage({ type: 'error', content: data.error || '生成失败' });
+                setMessage({ type: 'error', content: data.error || 'Generation failed' });
             }
         } catch (error) {
-            setMessage({ type: 'error', content: '请求失败: ' + error.message });
+            setMessage({ type: 'error', content: 'Request failed: ' + error.message });
         } finally {
             setIsGenerating(false);
         }
@@ -144,23 +144,23 @@ export default function Keys() {
                                 <div className="w-12 h-12 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-red-100">
                                     <AlertTriangle className="w-6 h-6 text-red-600" />
                                 </div>
-                                <h3 className="text-lg font-semibold text-zinc-900 mb-2">确认删除密钥？</h3>
+                                <h3 className="text-lg font-semibold text-zinc-900 mb-2">Confirm delete key?</h3>
                                 <p className="text-zinc-500 text-sm mb-8 leading-relaxed">
-                                    您确定要删除密钥 <code className="bg-zinc-100 px-2 py-1 rounded text-zinc-700 border border-zinc-200 font-mono">{deleteConfirm.key?.substring(0, 8)}...</code> 吗？<br />
-                                    此操作无法撤销，相关应用将立即失去访问权限。
+                                    Are you sure you want to delete key <code className="bg-zinc-100 px-2 py-1 rounded text-zinc-700 border border-zinc-200 font-mono">{deleteConfirm.key?.substring(0, 8)}...</code>?<br />
+                                    This action cannot be undone, related applications will immediately lose access.
                                 </p>
                                 <div className="flex gap-4 justify-center">
                                     <button
                                         onClick={() => setDeleteConfirm({ isOpen: false, key: null })}
                                         className="px-6 py-2.5 bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-700 font-medium rounded-lg transition-colors text-sm"
                                     >
-                                        取消
+                                        Cancel
                                     </button>
                                     <button
                                         onClick={confirmDelete}
                                         className="px-6 py-2.5 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition-colors shadow-sm text-sm"
                                     >
-                                        确认删除
+                                        Confirm Delete
                                     </button>
                                 </div>
                             </div>
@@ -171,8 +171,8 @@ export default function Keys() {
 
             <div className="flex justify-between items-end pb-2">
                 <div>
-                    <h2 className="text-2xl font-semibold text-zinc-900 tracking-tight">密钥管理</h2>
-                    <p className="text-base text-zinc-500 mt-1">生成和管理 API 访问密钥</p>
+                    <h2 className="text-2xl font-semibold text-zinc-900 tracking-tight">API Key Management</h2>
+                    <p className="text-base text-zinc-500 mt-1">Generate and manage API access keys</p>
                 </div>
                 <button
                     onClick={fetchKeys}
@@ -188,30 +188,30 @@ export default function Keys() {
                     <div className="bg-white rounded-xl border border-zinc-200 p-6 shadow-sm sticky top-24">
                         <h3 className="font-medium text-zinc-900 mb-6 flex items-center gap-2 text-base">
                             <Plus className="w-5 h-5" />
-                            生成新密钥
+                            Generate New Key
                         </h3>
 
                         <div className="space-y-5">
                             <div>
-                                <label className="block text-sm font-medium text-zinc-700 mb-2">密钥名称</label>
+                                <label className="block text-sm font-medium text-zinc-700 mb-2">Key Name</label>
                                 <input
                                     type="text"
                                     value={keyName}
                                     onChange={(e) => setKeyName(e.target.value)}
-                                    placeholder="例如: 我的应用密钥"
+                                    placeholder="e.g., My App Key"
                                     className="w-full px-4 py-2.5 bg-zinc-50 border border-zinc-200 rounded-lg focus:ring-2 focus:ring-zinc-900/5 focus:border-zinc-900 outline-none transition-all text-sm placeholder:text-zinc-400"
                                 />
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-zinc-700 mb-2">自定义密钥 (可选)</label>
+                                <label className="block text-sm font-medium text-zinc-700 mb-2">Custom Key (Optional)</label>
                                 <div className="relative">
                                     <Key className="absolute left-3.5 top-3 w-4 h-4 text-zinc-400" />
                                     <input
                                         type="text"
                                         value={customKey}
                                         onChange={(e) => setCustomKey(e.target.value)}
-                                        placeholder="留空自动生成"
+                                        placeholder="Leave empty to auto-generate"
                                         className="w-full pl-10 pr-4 py-2.5 bg-zinc-50 border border-zinc-200 rounded-lg focus:ring-2 focus:ring-zinc-900/5 focus:border-zinc-900 outline-none transition-all font-mono text-sm placeholder:text-zinc-400"
                                     />
                                 </div>
@@ -225,7 +225,7 @@ export default function Keys() {
                                         onChange={(e) => setEnableRateLimit(e.target.checked)}
                                         className="w-4 h-4 rounded border-zinc-300 text-zinc-900 focus:ring-zinc-900"
                                     />
-                                    <span className="text-sm font-medium text-zinc-700">启用频率限制</span>
+                                    <span className="text-sm font-medium text-zinc-700">Enable Rate Limit</span>
                                 </label>
 
                                 <AnimatePresence>
@@ -238,7 +238,7 @@ export default function Keys() {
                                         >
                                             <div className="grid grid-cols-2 gap-4">
                                                 <div>
-                                                    <label className="block text-xs font-medium text-zinc-500 mb-1.5">最大请求</label>
+                                                    <label className="block text-xs font-medium text-zinc-500 mb-1.5">Max Requests</label>
                                                     <input
                                                         type="number"
                                                         value={maxRequests}
@@ -248,7 +248,7 @@ export default function Keys() {
                                                     />
                                                 </div>
                                                 <div>
-                                                    <label className="block text-xs font-medium text-zinc-500 mb-1.5">窗口(秒)</label>
+                                                    <label className="block text-xs font-medium text-zinc-500 mb-1.5">Window (sec)</label>
                                                     <input
                                                         type="number"
                                                         value={windowSeconds}
@@ -268,7 +268,7 @@ export default function Keys() {
                                 disabled={isGenerating}
                                 className="w-full py-2.5 bg-zinc-900 hover:bg-zinc-800 text-white font-medium rounded-lg transition-all disabled:opacity-50 shadow-sm hover:shadow-md text-sm mt-2"
                             >
-                                {isGenerating ? '生成中...' : '生成密钥'}
+                                {isGenerating ? 'Generating...' : 'Generate Key'}
                             </button>
 
                             <AnimatePresence>
@@ -295,7 +295,7 @@ export default function Keys() {
                 <div className="lg:col-span-2">
                     <div className="bg-white rounded-xl border border-zinc-200 overflow-hidden shadow-sm flex flex-col min-h-[600px]">
                         <div className="px-6 py-4 border-b border-zinc-100 bg-zinc-50/30 flex justify-between items-center">
-                            <span className="text-sm font-medium text-zinc-600">密钥列表</span>
+                            <span className="text-sm font-medium text-zinc-600">Key List</span>
                             <span className="text-xs text-zinc-500 bg-zinc-100 px-2.5 py-1 rounded-full font-medium">{keys.length} ACTIVE</span>
                         </div>
 
@@ -305,8 +305,8 @@ export default function Keys() {
                                     <div className="w-16 h-16 bg-zinc-50 rounded-full flex items-center justify-center mb-4">
                                         <Key className="w-8 h-8 text-zinc-300" />
                                     </div>
-                                    <p className="text-base text-zinc-500 font-medium">暂无 API 密钥</p>
-                                    <p className="text-sm text-zinc-400 mt-1">请在左侧创建您的第一个密钥</p>
+                                    <p className="text-base text-zinc-500 font-medium">No API Keys</p>
+                                    <p className="text-sm text-zinc-400 mt-1">Create your first key on the left</p>
                                 </div>
                             ) : (
                                 <div className="divide-y divide-zinc-100">
@@ -321,7 +321,7 @@ export default function Keys() {
                                             <div className="flex items-start justify-between gap-6">
                                                 <div className="flex-1 min-w-0 space-y-4">
                                                     <div className="flex items-center gap-3">
-                                                        <h3 className="font-semibold text-zinc-900 text-base">{k.name || '未命名密钥'}</h3>
+                                                        <h3 className="font-semibold text-zinc-900 text-base">{k.name || 'Unnamed Key'}</h3>
                                                         {k.rate_limit ? (
                                                             <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded text-xs font-medium bg-amber-50 text-amber-700 border border-amber-100">
                                                                 <Shield className="w-3.5 h-3.5" />
@@ -330,7 +330,7 @@ export default function Keys() {
                                                         ) : (
                                                             <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-100">
                                                                 <Zap className="w-3.5 h-3.5" />
-                                                                无限制
+                                                                Unlimited
                                                             </span>
                                                         )}
                                                     </div>
@@ -343,14 +343,14 @@ export default function Keys() {
                                                             <button
                                                                 onClick={() => toggleKeyVisibility(k.key)}
                                                                 className="p-2 text-zinc-400 hover:text-zinc-900 hover:bg-zinc-100 rounded-lg transition-colors"
-                                                                title={visibleKeys.has(k.key) ? "隐藏密钥" : "显示密钥"}
+                                                                title={visibleKeys.has(k.key) ? "Hide key" : "Show key"}
                                                             >
                                                                 {visibleKeys.has(k.key) ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                                                             </button>
                                                             <button
                                                                 onClick={() => copyToClipboard(k.key)}
                                                                 className="p-2 text-zinc-400 hover:text-zinc-900 hover:bg-zinc-100 rounded-lg transition-colors"
-                                                                title="复制密钥"
+                                                                title="Copy key"
                                                             >
                                                                 {copiedKey === k.key ? <Check className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4" />}
                                                             </button>
@@ -359,14 +359,14 @@ export default function Keys() {
 
                                                     <div className="flex items-center gap-2 text-xs text-zinc-400">
                                                         <Clock className="w-3.5 h-3.5" />
-                                                        <span>创建于: {new Date(k.created).toLocaleString()}</span>
+                                                        <span>Created: {new Date(k.created).toLocaleString()}</span>
                                                     </div>
                                                 </div>
 
                                                 <button
                                                     onClick={() => handleDeleteClick(k.key)}
                                                     className="p-2.5 text-zinc-400 hover:text-red-600 hover:bg-red-50 rounded-xl opacity-0 group-hover:opacity-100 transition-all"
-                                                    title="删除密钥"
+                                                    title="Delete key"
                                                 >
                                                     <Trash2 className="w-5 h-5" />
                                                 </button>

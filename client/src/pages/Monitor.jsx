@@ -28,30 +28,16 @@ export default function Monitor() {
             const monitor = await monitorRes.json();
             const keyStats = await keyStatsRes.json();
 
-            // Parse memory string "123.45 MB / 16384.00 MB"
-            let memUsed = 0, memTotal = 0, memPercent = 0;
-            if (monitor.systemMemory) {
-                const parts = monitor.systemMemory.split(' / ');
-                if (parts.length === 2) {
-                    memUsed = parseFloat(parts[0]);
-                    memTotal = parseFloat(parts[1]);
-                    if (memTotal > 0) {
-                        memPercent = ((memUsed / memTotal) * 100).toFixed(1);
-                    }
-                }
-            }
-
             setStats({
                 cpu: monitor.cpu || 0,
                 memory: {
-                    used: memUsed * 1024 * 1024, // Convert back to bytes for display consistency if needed, or just use raw
-                    total: memTotal * 1024 * 1024,
-                    percentage: memPercent,
-                    display: monitor.systemMemory
+                    percentage: monitor.memoryPercent || 0,
+                    display: `${monitor.memory} / ${monitor.totalSystemMemory}`,
+                    heap: `${monitor.heapUsed} / ${monitor.heapTotal}`
                 },
-                uptime: monitor.uptime || '0s', // Backend returns formatted string
+                uptime: monitor.uptime || '0s',
                 requests: keyStats.totalRequests || 0,
-                status: monitor.idle === '活跃' ? 'busy' : 'idle',
+                status: monitor.idle === 'Idle mode' ? 'idle' : 'busy',
                 idleTime: monitor.idleTime || 0
             });
         } catch (error) {
@@ -85,8 +71,8 @@ export default function Monitor() {
         <div className="space-y-6">
             <div className="flex justify-between items-center">
                 <div>
-                    <h2 className="text-2xl font-semibold text-zinc-900 tracking-tight">系统监控</h2>
-                    <p className="text-zinc-500">实时监控服务器资源和状态</p>
+                    <h2 className="text-2xl font-semibold text-zinc-900 tracking-tight">System Monitor</h2>
+                    <p className="text-zinc-500">Real-time monitoring of server resources and status</p>
                 </div>
                 <div className="flex gap-2">
                     <button
@@ -99,7 +85,7 @@ export default function Monitor() {
                         )}
                     >
                         {autoRefresh ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-                        {autoRefresh ? '自动刷新中' : '自动刷新'}
+                        {autoRefresh ? 'Auto-refreshing' : 'Auto Refresh'}
                     </button>
                     <button
                         onClick={fetchStats}
@@ -112,14 +98,14 @@ export default function Monitor() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <MonitorCard
-                    title="CPU 使用率"
+                    title="CPU Usage"
                     value={`${stats.cpu}%`}
                     icon={Cpu}
                     color="text-blue-600"
                     bg="bg-blue-50 border-blue-100"
                 />
                 <MonitorCard
-                    title="内存使用"
+                    title="Memory Usage"
                     value={`${stats.memory.percentage}%`}
                     subtext={stats.memory.display}
                     icon={HardDrive}
@@ -127,7 +113,7 @@ export default function Monitor() {
                     bg="bg-purple-50 border-purple-100"
                 />
                 <MonitorCard
-                    title="运行时间"
+                    title="Uptime"
                     value={stats.uptime}
                     icon={Clock}
                     color="text-emerald-600"
@@ -135,7 +121,7 @@ export default function Monitor() {
                     className="text-lg"
                 />
                 <MonitorCard
-                    title="总请求数"
+                    title="Total Requests"
                     value={stats.requests}
                     icon={Activity}
                     color="text-orange-600"
@@ -147,15 +133,15 @@ export default function Monitor() {
                 <div className="bg-white rounded-xl border border-zinc-200 p-6 shadow-sm">
                     <h3 className="font-semibold text-zinc-900 mb-4 flex items-center gap-2 text-base">
                         <Zap className="w-5 h-5 text-zinc-900" />
-                        服务器状态
+                        Server Status
                     </h3>
                     <div className="flex items-center gap-4">
                         <div className={cn(
                             "w-4 h-4 rounded-full animate-pulse",
                             stats.status === 'busy' ? "bg-amber-500" : "bg-emerald-500"
                         )} />
-                        <span className="text-lg font-medium capitalize text-zinc-900">{stats.status === 'busy' ? '繁忙' : '空闲'}</span>
-                        <span className="text-zinc-400 text-sm ml-auto font-mono">空闲时间: {stats.idleTime}s</span>
+                        <span className="text-lg font-medium capitalize text-zinc-900">{stats.status === 'busy' ? 'Busy' : 'Idle'}</span>
+                        <span className="text-zinc-400 text-sm ml-auto font-mono">Idle time: {stats.idleTime}s</span>
                     </div>
                 </div>
             </div>

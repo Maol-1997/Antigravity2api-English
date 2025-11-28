@@ -31,10 +31,10 @@ export default function AuthOverlay() {
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-white">
-            {/* 极简网格背景 */}
+            {/* Minimalist grid background */}
             <div className="absolute inset-0 subtle-grid opacity-40" />
 
-            {/* 顶部装饰 */}
+            {/* Top decoration */}
             <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-zinc-200 to-transparent opacity-50" />
 
             <motion.div
@@ -52,7 +52,7 @@ export default function AuthOverlay() {
                             Antigravity
                         </h1>
                         <p className="text-zinc-500 text-sm">
-                            请输入访问密码
+                            Please enter access password
                         </p>
                     </div>
 
@@ -117,7 +117,7 @@ export default function AuthOverlay() {
                                 <Loader2 className="w-4 h-4 animate-spin" />
                             ) : (
                                 <>
-                                    <span>进入系统</span>
+                                    <span>Enter System</span>
                                     <ArrowRight className="w-4 h-4 opacity-50" />
                                 </>
                             )}

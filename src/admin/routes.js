@@ -9,33 +9,33 @@ import { createSession, validateSession, destroySession, verifyPassword, adminAu
 import { loadSettings, saveSettings } from './settings_manager.js';
 import tokenManager from '../auth/token_manager.js';
 
-// 配置文件上传
+// Configure file upload
 const upload = multer({ dest: 'uploads/' });
 
 const router = express.Router();
 
-// 登录接口（不需要认证）
+// Login endpoint (no authentication required)
 router.post('/login', async (req, res) => {
   try {
     const { password } = req.body;
     if (!password) {
-      return res.status(400).json({ error: '请输入密码' });
+      return res.status(400).json({ error: 'Please enter password' });
     }
 
     if (verifyPassword(password)) {
       const token = createSession();
-      await addLog('info', '管理员登录成功');
+      await addLog('info', 'Admin login successful');
       res.json({ success: true, token });
     } else {
-      await addLog('warn', '管理员登录失败：密码错误');
-      res.status(401).json({ error: '密码错误' });
+      await addLog('warn', 'Admin login failed: wrong password');
+      res.status(401).json({ error: 'Wrong password' });
     }
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-// 登出接口
+// Logout endpoint
 router.post('/logout', (req, res) => {
   const token = req.headers['x-admin-token'];
   if (token) {
@@ -44,7 +44,7 @@ router.post('/logout', (req, res) => {
   res.json({ success: true });
 });
 
-// 验证会话接口
+// Verify session endpoint
 router.get('/verify', (req, res) => {
   const token = req.headers['x-admin-token'];
   if (validateSession(token)) {
@@ -54,65 +54,65 @@ router.get('/verify', (req, res) => {
   }
 });
 
-// 以下所有路由需要认证
+// All following routes require authentication
 router.use(adminAuth);
 
-// 生成新密钥
+// Generate new key
 router.post('/keys/generate', async (req, res) => {
   try {
     const { name, rateLimit, key } = req.body;
     const newKey = await createKey(name, rateLimit, key);
-    await addLog('success', `密钥已生成: ${name || '未命名'}`);
+    await addLog('success', `Key generated: ${name || 'Unnamed'}`);
     res.json({ success: true, key: newKey.key, name: newKey.name, rateLimit: newKey.rateLimit });
   } catch (error) {
-    await addLog('error', `生成密钥失败: ${error.message}`);
+    await addLog('error', `Failed to generate key: ${error.message}`);
     res.status(500).json({ error: error.message });
   }
 });
 
-// 获取所有密钥
+// Get all keys
 router.get('/keys', async (req, res) => {
   try {
     const keys = await loadKeys();
-    // 返回密钥列表（隐藏部分字符）
+    // Return key list (hide partial characters)
     const safeKeys = keys.map(k => ({
       ...k,
       key: k.key.substring(0, 10) + '...' + k.key.substring(k.key.length - 4)
     }));
-    res.json(keys); // 在管理界面显示完整密钥
+    res.json(keys); // Show full key in admin interface
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-// 删除密钥
+// Delete key
 router.delete('/keys/:key', async (req, res) => {
   try {
     const { key } = req.params;
     await deleteKey(key);
-    await addLog('warn', `密钥已删除: ${key.substring(0, 10)}...`);
+    await addLog('warn', `Key deleted: ${key.substring(0, 10)}...`);
     res.json({ success: true });
   } catch (error) {
-    await addLog('error', `删除密钥失败: ${error.message}`);
+    await addLog('error', `Failed to delete key: ${error.message}`);
     res.status(500).json({ error: error.message });
   }
 });
 
-// 更新密钥频率限制
+// Update key rate limit
 router.patch('/keys/:key/ratelimit', async (req, res) => {
   try {
     const { key } = req.params;
     const { rateLimit } = req.body;
     await updateKeyRateLimit(key, rateLimit);
-    await addLog('info', `密钥频率限制已更新: ${key.substring(0, 10)}...`);
+    await addLog('info', `Key rate limit updated: ${key.substring(0, 10)}...`);
     res.json({ success: true });
   } catch (error) {
-    await addLog('error', `更新频率限制失败: ${error.message}`);
+    await addLog('error', `Failed to update rate limit: ${error.message}`);
     res.status(500).json({ error: error.message });
   }
 });
 
-// 获取密钥统计
+// Get key stats
 router.get('/keys/stats', async (req, res) => {
   try {
     const stats = await getKeyStats();
@@ -122,7 +122,7 @@ router.get('/keys/stats', async (req, res) => {
   }
 });
 
-// 获取日志
+// Get logs
 router.get('/logs', async (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 100;
@@ -133,18 +133,18 @@ router.get('/logs', async (req, res) => {
   }
 });
 
-// 清空日志
+// Clear logs
 router.delete('/logs', async (req, res) => {
   try {
     await clearLogs();
-    await addLog('info', '日志已清空');
+    await addLog('info', 'Logs cleared');
     res.json({ success: true });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-// 获取系统状态
+// Get system status
 router.get('/status', async (req, res) => {
   try {
     const status = getSystemStatus();
@@ -154,7 +154,7 @@ router.get('/status', async (req, res) => {
   }
 });
 
-// 获取今日请求统计
+// Get today's request stats
 router.get('/today-requests', async (req, res) => {
   try {
     const todayRequests = getTodayRequestCount();
@@ -164,13 +164,13 @@ router.get('/today-requests', async (req, res) => {
   }
 });
 
-// Token 管理路由
+// Token management routes
 
-// 获取所有账号
+// Get all accounts
 router.get('/tokens', async (req, res) => {
   try {
     const accounts = await loadAccounts();
-    // 隐藏敏感信息，只返回必要字段
+    // Hide sensitive info, only return necessary fields
     const safeAccounts = accounts.map((acc, index) => ({
       index,
       access_token: acc.access_token?.substring(0, 20) + '...',
@@ -186,59 +186,59 @@ router.get('/tokens', async (req, res) => {
   }
 });
 
-// 删除账号
+// Delete account
 router.delete('/tokens/:index', async (req, res) => {
   try {
     const index = parseInt(req.params.index);
     await deleteAccount(index);
-    await addLog('warn', `Token 账号 ${index} 已删除`);
+    await addLog('warn', `Token account ${index} deleted`);
     res.json({ success: true });
   } catch (error) {
-    await addLog('error', `删除 Token 失败: ${error.message}`);
+    await addLog('error', `Failed to delete token: ${error.message}`);
     res.status(500).json({ error: error.message });
   }
 });
 
-// 启用/禁用账号
+// Enable/disable account
 router.patch('/tokens/:index', async (req, res) => {
   try {
     const index = parseInt(req.params.index);
     const { enable } = req.body;
     await toggleAccount(index, enable);
-    await addLog('info', `Token 账号 ${index} 已${enable ? '启用' : '禁用'}`);
+    await addLog('info', `Token account ${index} ${enable ? 'enabled' : 'disabled'}`);
     res.json({ success: true });
   } catch (error) {
-    await addLog('error', `切换 Token 状态失败: ${error.message}`);
+    await addLog('error', `Failed to toggle token status: ${error.message}`);
     res.status(500).json({ error: error.message });
   }
 });
 
-// 启用/禁用账号 (POST方法支持)
+// Enable/disable account (POST method support)
 router.post('/tokens/toggle', async (req, res) => {
   try {
     const { index, enable } = req.body;
     await toggleAccount(index, enable);
-    await addLog('info', `Token 账号 ${index} 已${enable ? '启用' : '禁用'}`);
+    await addLog('info', `Token account ${index} ${enable ? 'enabled' : 'disabled'}`);
     res.json({ success: true });
   } catch (error) {
-    await addLog('error', `切换 Token 状态失败: ${error.message}`);
+    await addLog('error', `Failed to toggle token status: ${error.message}`);
     res.status(500).json({ error: error.message });
   }
 });
 
-// 触发登录流程
+// Trigger login flow
 router.post('/tokens/login', async (req, res) => {
   try {
-    await addLog('info', '开始 Google OAuth 登录流程');
+    await addLog('info', 'Starting Google OAuth login flow');
     const result = await triggerLogin();
     res.json(result);
   } catch (error) {
-    await addLog('error', `登录失败: ${error.message}`);
+    await addLog('error', `Login failed: ${error.message}`);
     res.status(500).json({ error: error.message });
   }
 });
 
-// 获取 Token 统计
+// Get token stats
 router.get('/tokens/stats', async (req, res) => {
   try {
     const stats = await getAccountStats();
@@ -248,7 +248,7 @@ router.get('/tokens/stats', async (req, res) => {
   }
 });
 
-// 获取 Token 使用统计（轮询信息）
+// Get token usage stats (polling info)
 router.get('/tokens/usage', async (req, res) => {
   try {
     const usageStats = tokenManager.getUsageStats();
@@ -258,24 +258,24 @@ router.get('/tokens/usage', async (req, res) => {
   }
 });
 
-// 手动添加 Token（通过回调链接）
+// Manually add token (via callback URL)
 router.post('/tokens/callback', async (req, res) => {
   try {
     const { callbackUrl } = req.body;
     if (!callbackUrl) {
-      return res.status(400).json({ error: '请提供回调链接' });
+      return res.status(400).json({ error: 'Please provide callback URL' });
     }
-    await addLog('info', '正在通过回调链接添加 Token...');
+    await addLog('info', 'Adding token via callback URL...');
     const result = await addTokenFromCallback(callbackUrl);
-    await addLog('success', 'Token 已通过回调链接成功添加');
+    await addLog('success', 'Token successfully added via callback URL');
     res.json(result);
   } catch (error) {
-    await addLog('error', `添加 Token 失败: ${error.message}`);
+    await addLog('error', `Failed to add token: ${error.message}`);
     res.status(500).json({ error: error.message });
   }
 });
 
-// 获取账号详细信息（包括名称）
+// Get account details (including name)
 router.post('/tokens/details', async (req, res) => {
   try {
     const { indices } = req.body;
@@ -305,7 +305,7 @@ router.post('/tokens/details', async (req, res) => {
   }
 });
 
-// 批量导出 Token (ZIP格式)
+// Batch export tokens (ZIP format)
 router.post('/tokens/export', async (req, res) => {
   try {
     const { indices } = req.body;
@@ -329,9 +329,9 @@ router.post('/tokens/export', async (req, res) => {
       }
     }
 
-    await addLog('info', `批量导出了 ${exportData.length} 个 Token 账号`);
+    await addLog('info', `Batch exported ${exportData.length} token accounts`);
 
-    // 创建 ZIP 文件
+    // Create ZIP file
     const archive = archiver('zip', { zlib: { level: 9 } });
     const timestamp = new Date().toISOString().split('T')[0];
 
@@ -340,34 +340,34 @@ router.post('/tokens/export', async (req, res) => {
 
     archive.pipe(res);
 
-    // 添加 tokens.json 文件到 ZIP
+    // Add tokens.json file to ZIP
     archive.append(JSON.stringify(exportData, null, 2), { name: 'tokens.json' });
 
     await archive.finalize();
   } catch (error) {
-    await addLog('error', `批量导出失败: ${error.message}`);
+    await addLog('error', `Batch export failed: ${error.message}`);
     res.status(500).json({ error: error.message });
   }
 });
 
-// 批量导入 Token (ZIP格式)
+// Batch import tokens (ZIP format)
 router.post('/tokens/import', upload.single('file'), async (req, res) => {
   try {
     if (!req.file) {
-      return res.status(400).json({ error: '请上传文件' });
+      return res.status(400).json({ error: 'Please upload a file' });
     }
 
-    await addLog('info', '正在导入 Token 账号...');
+    await addLog('info', 'Importing token accounts...');
     const result = await importTokens(req.file.path);
-    await addLog('success', `成功导入 ${result.count} 个 Token 账号`);
+    await addLog('success', `Successfully imported ${result.count} token accounts`);
     res.json(result);
   } catch (error) {
-    await addLog('error', `导入失败: ${error.message}`);
+    await addLog('error', `Import failed: ${error.message}`);
     res.status(500).json({ error: error.message });
   }
 });
 
-// 获取系统设置
+// Get system settings
 router.get('/settings', async (req, res) => {
   try {
     const settings = await loadSettings();
@@ -377,14 +377,14 @@ router.get('/settings', async (req, res) => {
   }
 });
 
-// 保存系统设置
+// Save system settings
 router.post('/settings', async (req, res) => {
   try {
     const result = await saveSettings(req.body);
-    await addLog('success', '系统设置已更新');
+    await addLog('success', 'System settings updated');
     res.json(result);
   } catch (error) {
-    await addLog('error', `保存设置失败: ${error.message}`);
+    await addLog('error', `Failed to save settings: ${error.message}`);
     res.status(500).json({ error: error.message });
   }
 });

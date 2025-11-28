@@ -1,14 +1,15 @@
 import tokenManager from '../auth/token_manager.js';
 import config from '../config/config.js';
 
-export async function generateAssistantResponse(requestBody, callback) {
-  const token = await tokenManager.getToken();
+export async function generateAssistantResponse(requestBody, callback, isImageModel = false, model = null) {
+  const token = await tokenManager.getToken(model);
 
   if (!token) {
-    throw new Error('没有可用的token，请运行 npm run login 获取token');
+    throw new Error('No available token, please run npm run login to get token');
   }
 
-  const url = config.api.url;
+  // Use different endpoint for image models
+  const url = isImageModel ? config.api.imageUrl : config.api.url;
 
   const response = await fetch(url, {
     method: 'POST',
@@ -26,24 +27,46 @@ export async function generateAssistantResponse(requestBody, callback) {
     const errorText = await response.text();
     if (response.status === 403) {
       tokenManager.disableCurrentToken(token);
-      throw new Error(`该账号没有使用权限，已自动禁用。错误详情: ${errorText}`);
+      throw new Error(`This account has no access permission, automatically disabled. Error details: ${errorText}`);
     }
-    throw new Error(`API请求失败 (${response.status}): ${errorText}`);
+    if (response.status === 429) {
+      // Parse quota reset time from error response
+      try {
+        const errorData = JSON.parse(errorText);
+        const errorInfo = errorData.error?.details?.find(d => d['@type']?.includes('ErrorInfo'));
+        if (errorInfo?.metadata?.quotaResetTimeStamp) {
+          const resetTimestamp = new Date(errorInfo.metadata.quotaResetTimeStamp).getTime();
+          const rateLimitedModel = errorInfo.metadata.model || model;
+          tokenManager.setQuotaCooldown(token, rateLimitedModel, resetTimestamp);
+          // Retry with a different token
+          return generateAssistantResponse(requestBody, callback, isImageModel, model);
+        }
+      } catch (e) {
+        // If parsing fails, just throw the error
+      }
+    }
+    throw new Error(`API request failed (${response.status}): ${errorText}`);
   }
 
+  // SSE streaming for all models
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
   let thinkingStarted = false;
   let toolCalls = [];
+  let buffer = '';
 
   while (true) {
     const { done, value } = await reader.read();
     if (done) break;
 
-    const chunk = decoder.decode(value);
-    const lines = chunk.split('\n').filter(line => line.startsWith('data: '));
+    buffer += decoder.decode(value, { stream: true });
+
+    // Process complete lines only
+    const lines = buffer.split('\n');
+    buffer = lines.pop() || ''; // Keep incomplete line in buffer
 
     for (const line of lines) {
+      if (!line.startsWith('data: ')) continue;
       const jsonStr = line.slice(6);
       try {
         const data = JSON.parse(jsonStr);
@@ -56,6 +79,16 @@ export async function generateAssistantResponse(requestBody, callback) {
                 thinkingStarted = true;
               }
               callback({ type: 'thinking', content: part.text || '' });
+            } else if (part.inlineData) {
+              // Handle image generation (Gemini 2.5 Flash Image / Nano Banana)
+              if (thinkingStarted) {
+                callback({ type: 'thinking', content: '\n</think>\n' });
+                thinkingStarted = false;
+              }
+              const mimeType = part.inlineData.mimeType;
+              const imageData = part.inlineData.data;
+              const markdownImage = `![Generated Image](data:${mimeType};base64,${imageData})`;
+              callback({ type: 'text', content: markdownImage });
             } else if (part.text !== undefined) {
               if (thinkingStarted) {
                 callback({ type: 'thinking', content: '\n</think>\n' });
@@ -64,12 +97,6 @@ export async function generateAssistantResponse(requestBody, callback) {
               let content = part.text || '';
               if (part.thought_signature) {
                 content += `\n<!-- thought_signature: ${part.thought_signature} -->`;
-              }
-
-              if (part.inlineData) {
-                const mimeType = part.inlineData.mimeType;
-                const data = part.inlineData.data;
-                content += `\n![Generated Image](data:${mimeType};base64,${data})`;
               }
 
               if (content) {
@@ -88,7 +115,7 @@ export async function generateAssistantResponse(requestBody, callback) {
           }
         }
 
-        // 当遇到 finishReason 时，发送所有收集的工具调用
+        // When encountering finishReason, send all collected tool calls
         if (data.response?.candidates?.[0]?.finishReason && toolCalls.length > 0) {
           if (thinkingStarted) {
             callback({ type: 'thinking', content: '\n</think>\n' });
@@ -98,7 +125,7 @@ export async function generateAssistantResponse(requestBody, callback) {
           toolCalls = [];
         }
       } catch (e) {
-        // 忽略解析错误
+        // Ignore parse errors
       }
     }
   }
@@ -108,7 +135,7 @@ export async function getAvailableModels() {
   const token = await tokenManager.getToken();
 
   if (!token) {
-    throw new Error('没有可用的token，请运行 npm run login 获取token');
+    throw new Error('No available token, please run npm run login to get token');
   }
 
   const response = await fetch(config.api.modelsUrl, {
@@ -125,7 +152,7 @@ export async function getAvailableModels() {
 
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(`获取模型列表失败 (${response.status}): ${errorText}`);
+    throw new Error(`Failed to get model list (${response.status}): ${errorText}`);
   }
 
   const responseText = await response.text();
@@ -133,7 +160,7 @@ export async function getAvailableModels() {
   try {
     data = JSON.parse(responseText);
   } catch (e) {
-    throw new Error(`JSON解析失败: ${e.message}. 原始响应: ${responseText.substring(0, 200)}`);
+    throw new Error(`JSON parse failed: ${e.message}. Raw response: ${responseText.substring(0, 200)}`);
   }
 
   return {

@@ -33,7 +33,7 @@ export default function Settings() {
                 });
             } catch (error) {
                 console.error('Failed to fetch settings', error);
-                setMessage({ type: 'error', content: '加载设置失败' });
+                setMessage({ type: 'error', content: 'Failed to load settings' });
             } finally {
                 setIsLoading(false);
             }
@@ -79,25 +79,25 @@ export default function Settings() {
             });
             const data = await res.json();
             if (data.success) {
-                setMessage({ type: 'success', content: '设置保存成功' });
+                setMessage({ type: 'success', content: 'Settings saved successfully' });
             } else {
-                setMessage({ type: 'error', content: '保存失败' });
+                setMessage({ type: 'error', content: 'Save failed' });
             }
         } catch (error) {
-            setMessage({ type: 'error', content: '保存失败: ' + error.message });
+            setMessage({ type: 'error', content: 'Save failed: ' + error.message });
         } finally {
             setIsSaving(false);
         }
     };
 
-    if (isLoading) return <div className="p-12 text-center text-zinc-400">加载中...</div>;
+    if (isLoading) return <div className="p-12 text-center text-zinc-400">Loading...</div>;
 
     return (
         <div className="space-y-6 max-w-4xl mx-auto pb-12">
             <div className="flex justify-between items-center sticky top-0 bg-zinc-50/90 backdrop-blur-sm py-4 z-10">
                 <div>
-                    <h2 className="text-2xl font-semibold text-zinc-900 tracking-tight">系统设置</h2>
-                    <p className="text-zinc-500">配置服务器参数和模型默认值</p>
+                    <h2 className="text-2xl font-semibold text-zinc-900 tracking-tight">System Settings</h2>
+                    <p className="text-zinc-500">Configure server parameters and model defaults</p>
                 </div>
                 <button
                     onClick={handleSave}
@@ -105,7 +105,7 @@ export default function Settings() {
                     className="flex items-center gap-2 px-6 py-2.5 bg-zinc-900 hover:bg-zinc-800 text-white font-medium rounded-xl transition-colors disabled:opacity-50 shadow-sm"
                 >
                     {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                    {isSaving ? '保存中...' : '保存设置'}
+                    {isSaving ? 'Saving...' : 'Save Settings'}
                 </button>
             </div>
 
@@ -132,18 +132,18 @@ export default function Settings() {
             <div className="bg-white rounded-xl border border-zinc-200 p-6 shadow-sm">
                 <h3 className="font-semibold text-zinc-900 mb-6 flex items-center gap-2 text-base">
                     <Server className="w-5 h-5 text-zinc-900" />
-                    服务器配置
+                    Server Configuration
                 </h3>
                 <div className="grid md:grid-cols-2 gap-6">
                     <FormInput
-                        label="服务端口"
+                        label="Server Port"
                         value={settings.port || ''}
                         onChange={v => handleChange('port', v)}
                         placeholder="8045"
                         type="number"
                     />
                     <FormInput
-                        label="监听地址"
+                        label="Listen Address"
                         value={settings.host || ''}
                         onChange={v => handleChange('host', v)}
                         placeholder="0.0.0.0"
@@ -155,25 +155,25 @@ export default function Settings() {
             <div className="bg-white rounded-xl border border-zinc-200 p-6 shadow-sm">
                 <h3 className="font-semibold text-zinc-900 mb-6 flex items-center gap-2 text-base">
                     <Shield className="w-5 h-5 text-zinc-900" />
-                    安全配置
+                    Security Configuration
                 </h3>
                 <div className="space-y-6">
                     <FormInput
-                        label="默认 API 密钥"
+                        label="Default API Key"
                         value={settings.apiKey || ''}
                         onChange={v => handleChange('apiKey', v)}
                         placeholder="sk-test"
-                        helper="此密钥不受频率限制约束，用于测试或内部使用"
+                        helper="This key is not subject to rate limits, for testing or internal use"
                     />
                     <FormInput
-                        label="管理员密码"
+                        label="Admin Password"
                         value={settings.adminPassword || ''}
                         onChange={v => handleChange('adminPassword', v)}
                         placeholder="admin123"
                         type="password"
                     />
                     <FormInput
-                        label="最大请求体大小"
+                        label="Max Request Size"
                         value={settings.maxRequestSize || ''}
                         onChange={v => handleChange('maxRequestSize', v)}
                         placeholder="50mb"
@@ -185,7 +185,7 @@ export default function Settings() {
             <div className="bg-white rounded-xl border border-zinc-200 p-6 shadow-sm">
                 <h3 className="font-semibold text-zinc-900 mb-6 flex items-center gap-2 text-base">
                     <Sliders className="w-5 h-5 text-zinc-900" />
-                    模型默认参数
+                    Model Defaults
                 </h3>
                 <div className="grid md:grid-cols-2 gap-6">
                     <FormInput
@@ -207,7 +207,7 @@ export default function Settings() {
                         type="number" min="1"
                     />
                     <FormInput
-                        label="最大 Token 数"
+                        label="Max Tokens"
                         value={settings.maxTokens || ''}
                         onChange={v => handleChange('maxTokens', parseInt(v))}
                         type="number" min="1"
@@ -219,7 +219,7 @@ export default function Settings() {
             <div className="bg-white rounded-xl border border-zinc-200 p-6 shadow-sm">
                 <h3 className="font-semibold text-zinc-900 mb-6 flex items-center gap-2 text-base">
                     <MessageSquare className="w-5 h-5 text-zinc-900" />
-                    系统指令
+                    System Instruction
                 </h3>
                 <div>
                     <label className="block text-sm font-medium text-zinc-700 mb-2">System Instruction</label>
@@ -227,7 +227,7 @@ export default function Settings() {
                         value={settings.systemInstruction || ''}
                         onChange={e => handleChange('systemInstruction', e.target.value)}
                         rows={5}
-                        placeholder="输入系统提示词..."
+                        placeholder="Enter system prompt..."
                         className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-zinc-900/5 focus:border-zinc-900 outline-none transition-all resize-y text-sm placeholder:text-zinc-400"
                     />
                 </div>

@@ -1,13 +1,13 @@
 import crypto from 'crypto';
 import config from '../config/config.js';
 
-// 存储有效的会话 token
+// Store valid session tokens
 const sessions = new Map();
 
-// 会话过期时间（24小时）
+// Session expiry time (24 hours)
 const SESSION_EXPIRY = 24 * 60 * 60 * 1000;
 
-// 生成会话 token
+// Create session token
 export function createSession() {
   const token = crypto.randomBytes(32).toString('hex');
   sessions.set(token, {
@@ -17,41 +17,41 @@ export function createSession() {
   return token;
 }
 
-// 验证会话
+// Validate session
 export function validateSession(token) {
   if (!token) return false;
 
   const session = sessions.get(token);
   if (!session) return false;
 
-  // 检查是否过期
+  // Check if expired
   if (Date.now() - session.created > SESSION_EXPIRY) {
     sessions.delete(token);
     return false;
   }
 
-  // 更新最后访问时间
+  // Update last access time
   session.lastAccess = Date.now();
   return true;
 }
 
-// 删除会话
+// Destroy session
 export function destroySession(token) {
   sessions.delete(token);
 }
 
-// 验证密码
+// Verify password
 export function verifyPassword(password) {
   const adminPassword = config.security?.adminPassword || 'admin123';
   return password === adminPassword;
 }
 
-// 获取管理密码
+// Get admin password
 export function getAdminPassword() {
   return config.security?.adminPassword || 'admin123';
 }
 
-// 清理过期会话
+// Clean up expired sessions
 function cleanupSessions() {
   const now = Date.now();
   for (const [token, session] of sessions.entries()) {
@@ -61,16 +61,16 @@ function cleanupSessions() {
   }
 }
 
-// 每小时清理一次过期会话
+// Clean up expired sessions every hour
 setInterval(cleanupSessions, 60 * 60 * 1000);
 
-// 管理员认证中间件
+// Admin authentication middleware
 export function adminAuth(req, res, next) {
   const token = req.headers['x-admin-token'] || req.query.token;
 
   if (validateSession(token)) {
     next();
   } else {
-    res.status(401).json({ error: '未授权，请先登录' });
+    res.status(401).json({ error: 'Unauthorized, please login first' });
   }
 }

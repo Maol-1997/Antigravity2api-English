@@ -80,9 +80,9 @@ export default function Dashboard() {
                 <div className="absolute bottom-0 left-0 -mb-4 -ml-4 h-32 w-32 rounded-full bg-zinc-800 blur-2xl opacity-50" />
 
                 <div className="relative z-10">
-                    <h2 className="text-2xl font-semibold mb-2 tracking-tight">欢迎回来, 管理员</h2>
+                    <h2 className="text-2xl font-semibold mb-2 tracking-tight">Welcome back, Admin</h2>
                     <p className="text-zinc-400 text-base max-w-2xl">
-                        Antigravity API 网关正在平稳运行。这里是您的控制中心，您可以管理 Token、密钥并监控系统状态。
+                        Antigravity API Gateway is running smoothly. This is your control center where you can manage Tokens, API keys, and monitor system status.
                     </p>
                 </div>
             </motion.div>
@@ -90,15 +90,15 @@ export default function Dashboard() {
             {/* Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <StatsCard
-                    title="服务状态"
-                    value="运行中"
+                    title="Service Status"
+                    value="Running"
                     icon={Activity}
                     color="text-emerald-600"
                     bg="bg-emerald-50"
-                    subtext="系统正常"
+                    subtext="System Normal"
                 />
                 <StatsCard
-                    title="Token 账号"
+                    title="Token Accounts"
                     value={stats.tokens}
                     icon={Users}
                     color="text-blue-600"
@@ -111,49 +111,49 @@ export default function Dashboard() {
                     }
                 />
                 <StatsCard
-                    title="API 密钥"
+                    title="API Keys"
                     value={stats.keys}
                     icon={Key}
                     color="text-violet-600"
                     bg="bg-violet-50"
-                    subtext={`总请求: ${stats.keyRequests}`}
+                    subtext={`Total requests: ${stats.keyRequests}`}
                 />
                 <StatsCard
-                    title="今日请求"
+                    title="Today's Requests"
                     value={stats.todayRequests}
                     icon={BarChart3}
                     color="text-orange-600"
                     bg="bg-orange-50"
-                    subtext="实时统计"
+                    subtext="Real-time stats"
                 />
             </div>
 
             {/* Quick Start */}
             <motion.div variants={item} className="bg-white rounded-xl border border-zinc-200 p-8 shadow-sm">
-                <h3 className="text-lg font-semibold text-zinc-900 mb-6">快速开始指南</h3>
+                <h3 className="text-lg font-semibold text-zinc-900 mb-6">Quick Start Guide</h3>
                 <div className="grid gap-6 md:grid-cols-2">
                     <QuickStartStep
                         number="01"
-                        title="获取 Google Token"
-                        desc="在 Token 管理页面登录 Google 账号获取 Access Token，这是服务的核心凭证。"
+                        title="Get Google Token"
+                        desc="Login with your Google account on the Token Management page to get an Access Token, which is the core credential for the service."
                         link="/tokens"
                     />
                     <QuickStartStep
                         number="02"
-                        title="生成 API 密钥"
-                        desc="在密钥管理页面生成对外服务的 API Key，支持设置频率限制。"
+                        title="Generate API Key"
+                        desc="Generate an API Key for external services on the Keys page, with optional rate limiting."
                         link="/keys"
                     />
                     <QuickStartStep
                         number="03"
-                        title="测试接口"
-                        desc="使用 API 测试工具验证接口连通性，确保模型回复正常。"
+                        title="Test API"
+                        desc="Use the API Test tool to verify connectivity and ensure model responses are working properly."
                         link="/test"
                     />
                     <QuickStartStep
                         number="04"
-                        title="监控日志"
-                        desc="在日志页面查看实时请求记录，排查潜在问题。"
+                        title="Monitor Logs"
+                        desc="View real-time request logs on the Logs page to troubleshoot potential issues."
                         link="/logs"
                     />
                 </div>

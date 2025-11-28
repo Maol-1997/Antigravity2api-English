@@ -1,21 +1,21 @@
 import logger from './logger.js';
 
 /**
- * 空闲模式管理器
- * 在没有请求时降低内存使用，减少后台活动
+ * Idle Mode Manager
+ * Reduces memory usage and background activity when there are no requests
  */
 class IdleManager {
   constructor() {
     this.lastRequestTime = Date.now();
-    this.idleTimeout = 30 * 1000; // 30秒无请求后进入空闲模式（极致优化）
+    this.idleTimeout = 30 * 1000; // Enter idle mode after 30 seconds of no requests
     this.isIdle = false;
     this.gcInterval = null;
     this.checkInterval = null;
 
-    // 启动空闲检查
+    // Start idle check
     this.startIdleCheck();
 
-    // 10秒后立即检查是否应该进入空闲模式
+    // Check if should enter idle mode after 10 seconds
     setTimeout(() => {
       const idleTime = Date.now() - this.lastRequestTime;
       if (idleTime > this.idleTimeout) {
@@ -25,87 +25,87 @@ class IdleManager {
   }
 
   /**
-   * 记录请求活动
+   * Record request activity
    */
   recordActivity() {
     this.lastRequestTime = Date.now();
 
-    // 如果之前是空闲状态，现在恢复活跃
+    // If previously idle, restore to active
     if (this.isIdle) {
       this.exitIdleMode();
     }
   }
 
   /**
-   * 启动空闲检查
+   * Start idle check
    */
   startIdleCheck() {
-    // 每15秒检查一次是否应该进入空闲模式
+    // Check every 15 seconds if should enter idle mode
     this.checkInterval = setInterval(() => {
       const idleTime = Date.now() - this.lastRequestTime;
 
       if (!this.isIdle && idleTime > this.idleTimeout) {
         this.enterIdleMode();
       }
-    }, 15000); // 每15秒检查一次（更频繁）
+    }, 15000); // Check every 15 seconds
 
-    // 不阻止进程退出
+    // Don't prevent process exit
     this.checkInterval.unref();
   }
 
   /**
-   * 进入空闲模式
+   * Enter idle mode
    */
   enterIdleMode() {
     if (this.isIdle) return;
 
-    logger.info('⏸️  进入空闲模式 - 降低资源使用');
+    logger.info('⏸️  Entering idle mode - reducing resource usage');
     this.isIdle = true;
 
-    // 触发垃圾回收
+    // Trigger garbage collection
     if (global.gc) {
       global.gc();
-      logger.info('🗑️  已触发垃圾回收');
+      logger.info('🗑️  Triggered garbage collection');
     } else {
-      // 如果没有启用 --expose-gc，尝试通过其他方式释放内存
-      logger.warn('⚠️  未启用 --expose-gc，建议使用 node --expose-gc 启动以获得更好的内存优化');
+      // If --expose-gc not enabled, try to release memory through other ways
+      logger.warn('⚠️  --expose-gc not enabled, recommend starting with node --expose-gc for better memory optimization');
     }
 
-    // 在空闲模式下，每2分钟进行一次垃圾回收（更频繁）
+    // In idle mode, perform garbage collection every 2 minutes
     this.gcInterval = setInterval(() => {
       if (global.gc) {
         global.gc();
-        logger.info('🗑️  空闲模式：定期垃圾回收');
+        logger.info('🗑️  Idle mode: periodic garbage collection');
       }
-    }, 2 * 60 * 1000); // 每2分钟一次
+    }, 2 * 60 * 1000); // Every 2 minutes
 
-    // 不阻止进程退出
+    // Don't prevent process exit
     this.gcInterval.unref();
   }
 
   /**
-   * 退出空闲模式
+   * Exit idle mode
    */
   exitIdleMode() {
     if (!this.isIdle) return;
 
-    logger.info('▶️  退出空闲模式 - 恢复正常运行');
+    logger.info('▶️  Exiting idle mode - resuming normal operation');
     this.isIdle = false;
 
-    // 清除空闲模式的定时器
+    // Clear idle mode timer
     if (this.gcInterval) {
       clearInterval(this.gcInterval);
       this.gcInterval = null;
     }
 
-    // 触发一次垃圾回收，清理空闲期间的内存
+    // Trigger garbage collection once to clean up idle period memory
     if (global.gc) {
       global.gc();
     }
   }
 
   /**
-   * 获取当前状态
+   * Get current status
    */
   getStatus() {
     const idleTime = Date.now() - this.lastRequestTime;
@@ -117,7 +117,7 @@ class IdleManager {
   }
 
   /**
-   * 清理资源
+   * Clean up resources
    */
   destroy() {
     if (this.checkInterval) {

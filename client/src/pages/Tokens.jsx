@@ -49,7 +49,7 @@ export default function Tokens() {
             }
         } catch (error) {
             console.error('Failed to fetch tokens', error);
-            setMessage({ type: 'error', content: '加载 Token 失败' });
+            setMessage({ type: 'error', content: 'Failed to load tokens' });
         } finally {
             setIsLoading(false);
         }
@@ -68,14 +68,14 @@ export default function Tokens() {
             const data = await res.json();
             if (data.success && data.authUrl) {
                 window.open(data.authUrl, '_blank');
-                setMessage({ type: 'info', content: '已打开登录页面，完成后请刷新列表' });
+                setMessage({ type: 'info', content: 'Login page opened, please refresh list after completion' });
                 // Auto refresh after 10s
                 setTimeout(fetchTokens, 10000);
             } else {
-                setMessage({ type: 'error', content: data.message || '启动登录失败' });
+                setMessage({ type: 'error', content: data.message || 'Failed to start login' });
             }
         } catch (error) {
-            setMessage({ type: 'error', content: '请求失败: ' + error.message });
+            setMessage({ type: 'error', content: 'Request failed: ' + error.message });
         }
     };
 
@@ -99,14 +99,14 @@ export default function Tokens() {
             });
             const data = await res.json();
             if (data.success) {
-                setMessage({ type: 'success', content: 'Token 添加成功' });
+                setMessage({ type: 'success', content: 'Token added successfully' });
                 setManualUrl('');
                 fetchTokens();
             } else {
-                setMessage({ type: 'error', content: data.error || '添加失败' });
+                setMessage({ type: 'error', content: data.error || 'Failed to add' });
             }
         } catch (error) {
-            setMessage({ type: 'error', content: '请求失败: ' + error.message });
+            setMessage({ type: 'error', content: 'Request failed: ' + error.message });
         } finally {
             setIsAdding(false);
         }
@@ -131,7 +131,7 @@ export default function Tokens() {
     };
 
     const deleteToken = async (index) => {
-        if (!confirm('确定要删除这个 Token 吗？')) return;
+        if (!confirm('Are you sure you want to delete this token?')) return;
         try {
             const res = await fetch(`/admin/tokens/${index}`, {
                 method: 'DELETE',
@@ -167,7 +167,7 @@ export default function Tokens() {
     };
 
     const exportTokens = async () => {
-        if (selectedTokens.size === 0) return alert('请先选择要导出的账号');
+        if (selectedTokens.size === 0) return alert('Please select accounts to export first');
         try {
             const res = await fetch('/admin/tokens/export', {
                 method: 'POST',
@@ -209,13 +209,13 @@ export default function Tokens() {
                 });
                 const data = await res.json();
                 if (data.success) {
-                    setMessage({ type: 'success', content: `成功导入 ${data.count} 个 Token` });
+                    setMessage({ type: 'success', content: `Successfully imported ${data.count} tokens` });
                     fetchTokens();
                 } else {
-                    setMessage({ type: 'error', content: data.error || '导入失败' });
+                    setMessage({ type: 'error', content: data.error || 'Import failed' });
                 }
             } catch (error) {
-                setMessage({ type: 'error', content: '导入失败: ' + error.message });
+                setMessage({ type: 'error', content: 'Import failed: ' + error.message });
             }
         };
         input.click();
@@ -225,14 +225,14 @@ export default function Tokens() {
         <div className="space-y-6">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-2">
                 <div>
-                    <h2 className="text-2xl font-semibold text-zinc-900 tracking-tight">Token 管理</h2>
-                    <p className="text-base text-zinc-500 mt-1">管理 Google OAuth 账号和 Access Token</p>
+                    <h2 className="text-2xl font-semibold text-zinc-900 tracking-tight">Token Management</h2>
+                    <p className="text-base text-zinc-500 mt-1">Manage Google OAuth accounts and Access Tokens</p>
                 </div>
                 <div className="flex gap-2">
                     <button
                         onClick={fetchTokens}
                         className="p-2.5 text-zinc-600 hover:bg-zinc-100 rounded-lg transition-colors"
-                        title="刷新列表"
+                        title="Refresh list"
                     >
                         <RefreshCw className={cn("w-5 h-5", isLoading && "animate-spin")} />
                     </button>
@@ -247,7 +247,7 @@ export default function Tokens() {
                         className="flex items-center gap-2 px-5 py-2.5 bg-white border border-zinc-200 hover:bg-zinc-50 text-zinc-700 font-medium rounded-xl transition-all shadow-sm hover:shadow-md text-sm"
                     >
                         <LogIn className="w-4 h-4 text-blue-600" />
-                        Google 登录
+                        Google Login
                     </button>
                     <div className="w-px h-10 bg-zinc-200 hidden md:block" />
                     <button
@@ -255,14 +255,14 @@ export default function Tokens() {
                         className="flex items-center gap-2 px-5 py-2.5 bg-amber-50 hover:bg-amber-100 text-amber-700 font-medium rounded-xl transition-colors text-sm"
                     >
                         <Download className="w-4 h-4" />
-                        导出选中
+                        Export Selected
                     </button>
                     <button
                         onClick={importTokens}
                         className="flex items-center gap-2 px-5 py-2.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-medium rounded-xl transition-colors text-sm"
                     >
                         <Upload className="w-4 h-4" />
-                        导入
+                        Import
                     </button>
                 </div>
 
@@ -271,7 +271,7 @@ export default function Tokens() {
                         type="text"
                         value={manualUrl}
                         onChange={(e) => setManualUrl(e.target.value)}
-                        placeholder="粘贴回调链接以手动添加..."
+                        placeholder="Paste callback URL to add manually..."
                         className="flex-1 px-4 py-2.5 border border-zinc-200 rounded-xl focus:ring-2 focus:ring-zinc-900/5 focus:border-zinc-900 outline-none transition-all text-sm placeholder:text-zinc-400"
                     />
                     <button
@@ -279,7 +279,7 @@ export default function Tokens() {
                         disabled={!manualUrl || isAdding}
                         className="px-6 py-2.5 bg-zinc-900 hover:bg-zinc-800 text-white font-medium rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
                     >
-                        {isAdding ? '添加中...' : '添加'}
+                        {isAdding ? 'Adding...' : 'Add'}
                     </button>
                 </div>
 
@@ -313,14 +313,14 @@ export default function Tokens() {
                             onChange={selectAll}
                             className="w-4 h-4 rounded border-zinc-300 text-zinc-900 focus:ring-zinc-900"
                         />
-                        <span className="text-sm font-medium text-zinc-600">全选 ({selectedTokens.size})</span>
+                        <span className="text-sm font-medium text-zinc-600">Select all ({selectedTokens.size})</span>
                     </div>
-                    <div className="text-sm text-zinc-400">共 {tokens.length} 个账号</div>
+                    <div className="text-sm text-zinc-400">Total {tokens.length} accounts</div>
                 </div>
 
                 {tokens.length === 0 ? (
                     <div className="p-12 text-center text-zinc-400">
-                        {isLoading ? '加载中...' : '暂无 Token 账号'}
+                        {isLoading ? 'Loading...' : 'No token accounts'}
                     </div>
                 ) : (
                     <div className="divide-y divide-zinc-100">
@@ -349,11 +349,11 @@ export default function Tokens() {
                                             <h3 className="font-semibold text-zinc-900 truncate text-base">{t.name || 'Unknown'}</h3>
                                             {t.enable ? (
                                                 <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 text-xs font-medium flex items-center gap-1">
-                                                    <CheckCircle2 className="w-3 h-3" /> 已启用
+                                                    <CheckCircle2 className="w-3 h-3" /> Enabled
                                                 </span>
                                             ) : (
                                                 <span className="px-2 py-0.5 rounded-full bg-zinc-100 text-zinc-600 text-xs font-medium flex items-center gap-1">
-                                                    <XCircle className="w-3 h-3" /> 已禁用
+                                                    <XCircle className="w-3 h-3" /> Disabled
                                                 </span>
                                             )}
                                         </div>
@@ -362,8 +362,8 @@ export default function Tokens() {
                                             {t.access_token}
                                         </div>
                                         <div className="flex items-center gap-4 mt-3 text-xs text-zinc-400">
-                                            <span>创建: {t.created}</span>
-                                            <span>过期: {t.expires_in}s</span>
+                                            <span>Created: {t.created}</span>
+                                            <span>Expires: {t.expires_in}s</span>
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -373,14 +373,14 @@ export default function Tokens() {
                                                 "p-2.5 rounded-lg transition-colors",
                                                 t.enable ? "text-amber-600 hover:bg-amber-50" : "text-emerald-600 hover:bg-emerald-50"
                                             )}
-                                            title={t.enable ? "禁用" : "启用"}
+                                            title={t.enable ? "Disable" : "Enable"}
                                         >
                                             <Power className="w-4 h-4" />
                                         </button>
                                         <button
                                             onClick={() => deleteToken(t.index)}
                                             className="p-2.5 text-zinc-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                            title="删除"
+                                            title="Delete"
                                         >
                                             <Trash2 className="w-4 h-4" />
                                         </button>

@@ -13,14 +13,14 @@ import idleManager from '../utils/idle_manager.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// 确保必要的目录存在
+// Ensure required directories exist
 const ensureDirectories = () => {
   const dirs = ['data', 'uploads'];
   dirs.forEach(dir => {
     const dirPath = path.join(process.cwd(), dir);
     if (!fs.existsSync(dirPath)) {
       fs.mkdirSync(dirPath, { recursive: true });
-      logger.info(`创建目录: ${dir}`);
+      logger.info(`Created directory: ${dir}`);
     }
   });
 };
@@ -31,12 +31,12 @@ const app = express();
 
 app.use(express.json({ limit: config.security.maxRequestSize }));
 
-// 静态文件服务 - 提供管理控制台页面
+// Static file serving - provides admin console pages
 app.use(express.static(path.join(process.cwd(), 'client/dist')));
 
 app.use((err, req, res, next) => {
   if (err.type === 'entity.too.large') {
-    return res.status(413).json({ error: `请求体过大，最大支持 ${config.security.maxRequestSize}` });
+    return res.status(413).json({ error: `Request body too large, maximum supported: ${config.security.maxRequestSize}` });
   }
   next(err);
 });
@@ -45,9 +45,9 @@ app.use((err, req, res, next) => {
 
 
 
-// 请求日志中间件
+// Request logging middleware
 app.use((req, res, next) => {
-  // 记录请求活动，管理空闲状态
+  // Record request activity, manage idle state
   if (req.path.startsWith('/v1/')) {
     idleManager.recordActivity();
   }
@@ -57,7 +57,7 @@ app.use((req, res, next) => {
     const duration = Date.now() - start;
     logger.request(req.method, req.path, res.statusCode, duration);
 
-    // 记录到管理日志
+    // Log to admin logs
     if (req.path.startsWith('/v1/')) {
       incrementRequestCount();
       addLog('info', `${req.method} ${req.path} - ${res.statusCode} (${duration}ms)`);
@@ -66,7 +66,7 @@ app.use((req, res, next) => {
   next();
 });
 
-// API 密钥验证和频率限制中间件
+// API key validation and rate limiting middleware
 app.use(async (req, res, next) => {
   if (req.path.startsWith('/v1/')) {
     const apiKey = config.security?.apiKey;
@@ -74,24 +74,24 @@ app.use(async (req, res, next) => {
       const authHeader = req.headers.authorization;
       const providedKey = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : authHeader;
 
-      // 先检查配置文件中的密钥（不受频率限制）
+      // First check config file key (not rate limited)
       if (providedKey === apiKey) {
         return next();
       }
 
-      // 再检查数据库中的密钥
+      // Then check database keys
       const isValid = await validateKey(providedKey);
       if (!isValid) {
-        logger.warn(`API Key 验证失败: ${req.method} ${req.path}`);
-        await addLog('warn', `API Key 验证失败: ${req.method} ${req.path}`);
+        logger.warn(`API Key validation failed: ${req.method} ${req.path}`);
+        await addLog('warn', `API Key validation failed: ${req.method} ${req.path}`);
         return res.status(401).json({ error: 'Invalid API Key' });
       }
 
-      // 检查频率限制
+      // Check rate limit
       const rateLimitCheck = await checkRateLimit(providedKey);
       if (!rateLimitCheck.allowed) {
-        logger.warn(`频率限制: ${req.method} ${req.path} - ${rateLimitCheck.error}`);
-        await addLog('warn', `频率限制触发: ${providedKey.substring(0, 10)}...`);
+        logger.warn(`Rate limit: ${req.method} ${req.path} - ${rateLimitCheck.error}`);
+        await addLog('warn', `Rate limit triggered: ${providedKey.substring(0, 10)}...`);
 
         res.setHeader('X-RateLimit-Limit', rateLimitCheck.limit || 0);
         res.setHeader('X-RateLimit-Remaining', 0);
@@ -106,7 +106,7 @@ app.use(async (req, res, next) => {
         });
       }
 
-      // 设置频率限制响应头
+      // Set rate limit response headers
       if (rateLimitCheck.limit) {
         res.setHeader('X-RateLimit-Limit', rateLimitCheck.limit);
         res.setHeader('X-RateLimit-Remaining', rateLimitCheck.remaining);
@@ -116,7 +116,7 @@ app.use(async (req, res, next) => {
   next();
 });
 
-// 管理路由
+// Admin routes
 app.use('/admin', adminRoutes);
 
 app.get('/v1/models', async (req, res) => {
@@ -124,7 +124,7 @@ app.get('/v1/models', async (req, res) => {
     const models = await getAvailableModels();
     res.json(models);
   } catch (error) {
-    logger.error('获取模型列表失败:', error.message);
+    logger.error('Failed to get model list:', error.message);
     res.status(500).json({ error: error.message });
   }
 });
@@ -137,13 +137,13 @@ app.post('/v1/chat/completions', async (req, res) => {
       return res.status(400).json({ error: 'messages is required' });
     }
 
-    // 智能检测：NewAPI测速请求通常消息很简单，强制使用非流式响应
-    // 检测条件：单条消息 + 内容很短（如 "hi", "test" 等）
+    // Smart detection: NewAPI speed test requests usually have simple messages, force non-streaming response
+    // Detection conditions: single message + short content (e.g., "hi", "test", etc.)
     const isSingleShortMessage = messages.length === 1 &&
       messages[0].content &&
       messages[0].content.length < 20;
 
-    // 如果检测到可能是测速请求，且未明确要求流式，则使用非流式
+    // If detected as possible speed test request and streaming not explicitly requested, use non-streaming
     if (isSingleShortMessage && req.body.stream === undefined) {
       stream = false;
     }
@@ -153,6 +153,8 @@ app.post('/v1/chat/completions', async (req, res) => {
 
     const requestBody = generateRequestBody(messages, model, params, tools, apiKey);
 
+    // Check if this is an image model
+    const isImageModel = model.includes('image');
 
     if (stream) {
       res.setHeader('Content-Type', 'text/event-stream');
@@ -162,6 +164,10 @@ app.post('/v1/chat/completions', async (req, res) => {
       const id = `chatcmpl-${Date.now()}`;
       const created = Math.floor(Date.now() / 1000);
       let hasToolCall = false;
+
+      // State for parsing <think> tags from text content
+      let inThinkBlock = false;
+      let thinkBuffer = '';
 
       await generateAssistantResponse(requestBody, (data) => {
         if (data.type === 'tool_calls') {
@@ -173,16 +179,105 @@ app.post('/v1/chat/completions', async (req, res) => {
             model,
             choices: [{ index: 0, delta: { tool_calls: data.tool_calls }, finish_reason: null }]
           })}\n\n`);
+        } else if (data.type === 'thinking') {
+          // Native thinking from Gemini - send as reasoning_content
+          // Strip <think> and </think> tags
+          let content = data.content || '';
+          content = content.replace(/<think>\n?/g, '').replace(/\n?<\/think>\n?/g, '');
+          if (content) {
+            res.write(`data: ${JSON.stringify({
+              id,
+              object: 'chat.completion.chunk',
+              created,
+              model,
+              choices: [{ index: 0, delta: { reasoning_content: content }, finish_reason: null }]
+            })}\n\n`);
+          }
         } else {
-          res.write(`data: ${JSON.stringify({
-            id,
-            object: 'chat.completion.chunk',
-            created,
-            model,
-            choices: [{ index: 0, delta: { content: data.content }, finish_reason: null }]
-          })}\n\n`);
+          // Regular text - check for <think> tags embedded in content
+          let content = data.content || '';
+
+          // Process character by character to handle streaming <think> tags
+          let i = 0;
+          while (i < content.length) {
+            if (!inThinkBlock) {
+              // Look for <think> start tag
+              const thinkStart = content.indexOf('<think>', i);
+              if (thinkStart === i) {
+                inThinkBlock = true;
+                i += 7; // Skip past <think>
+                // Skip newline after <think> if present
+                if (content[i] === '\n') i++;
+                continue;
+              } else if (thinkStart > i) {
+                // Send text before <think>
+                const textBefore = content.slice(i, thinkStart);
+                res.write(`data: ${JSON.stringify({
+                  id,
+                  object: 'chat.completion.chunk',
+                  created,
+                  model,
+                  choices: [{ index: 0, delta: { content: textBefore }, finish_reason: null }]
+                })}\n\n`);
+                inThinkBlock = true;
+                i = thinkStart + 7;
+                if (content[i] === '\n') i++;
+                continue;
+              } else {
+                // No <think> tag, send as regular content
+                const remaining = content.slice(i);
+                if (remaining) {
+                  res.write(`data: ${JSON.stringify({
+                    id,
+                    object: 'chat.completion.chunk',
+                    created,
+                    model,
+                    choices: [{ index: 0, delta: { content: remaining }, finish_reason: null }]
+                  })}\n\n`);
+                }
+                break;
+              }
+            } else {
+              // Inside think block - look for </think>
+              const thinkEnd = content.indexOf('</think>', i);
+              if (thinkEnd === -1) {
+                // No end tag yet, buffer and send as reasoning
+                const reasoning = content.slice(i);
+                if (reasoning) {
+                  res.write(`data: ${JSON.stringify({
+                    id,
+                    object: 'chat.completion.chunk',
+                    created,
+                    model,
+                    choices: [{ index: 0, delta: { reasoning_content: reasoning }, finish_reason: null }]
+                  })}\n\n`);
+                }
+                break;
+              } else {
+                // Found end tag
+                const reasoning = content.slice(i, thinkEnd);
+                if (reasoning) {
+                  // Remove trailing newline before </think>
+                  const cleanReasoning = reasoning.replace(/\n$/, '');
+                  if (cleanReasoning) {
+                    res.write(`data: ${JSON.stringify({
+                      id,
+                      object: 'chat.completion.chunk',
+                      created,
+                      model,
+                      choices: [{ index: 0, delta: { reasoning_content: cleanReasoning }, finish_reason: null }]
+                    })}\n\n`);
+                  }
+                }
+                inThinkBlock = false;
+                i = thinkEnd + 8; // Skip past </think>
+                // Skip newline after </think> if present
+                if (content[i] === '\n') i++;
+              }
+            }
+          }
         }
-      });
+      }, isImageModel, model);
 
       res.write(`data: ${JSON.stringify({
         id,
@@ -195,16 +290,37 @@ app.post('/v1/chat/completions', async (req, res) => {
       res.end();
     } else {
       let fullContent = '';
+      let reasoningContent = '';
       let toolCalls = [];
+      let inThinkBlock = false;
+
       await generateAssistantResponse(requestBody, (data) => {
         if (data.type === 'tool_calls') {
           toolCalls = data.tool_calls;
+        } else if (data.type === 'thinking') {
+          // Native thinking from Gemini
+          let content = data.content || '';
+          content = content.replace(/<think>\n?/g, '').replace(/\n?<\/think>\n?/g, '');
+          reasoningContent += content;
         } else {
-          fullContent += data.content;
-        }
-      });
+          // Check for <think> tags in text content
+          let content = data.content || '';
 
-      const message = { role: 'assistant', content: fullContent };
+          // Simple regex extraction for non-streaming
+          const thinkMatch = content.match(/<think>([\s\S]*?)<\/think>/);
+          if (thinkMatch) {
+            reasoningContent += thinkMatch[1].trim();
+            content = content.replace(/<think>[\s\S]*?<\/think>\n?/g, '');
+          }
+
+          fullContent += content;
+        }
+      }, isImageModel, model);
+
+      const message = { role: 'assistant', content: fullContent.trim() };
+      if (reasoningContent) {
+        message.reasoning_content = reasoningContent.trim();
+      }
       if (toolCalls.length > 0) {
         message.tool_calls = toolCalls;
       }
@@ -222,7 +338,7 @@ app.post('/v1/chat/completions', async (req, res) => {
       });
     }
   } catch (error) {
-    logger.error('生成响应失败:', error.message);
+    logger.error('Failed to generate response:', error.message);
     if (!res.headersSent) {
       if (stream) {
         res.setHeader('Content-Type', 'text/event-stream');
@@ -235,7 +351,7 @@ app.post('/v1/chat/completions', async (req, res) => {
           object: 'chat.completion.chunk',
           created,
           model,
-          choices: [{ index: 0, delta: { content: `错误: ${error.message}` }, finish_reason: null }]
+          choices: [{ index: 0, delta: { content: `Error: ${error.message}` }, finish_reason: null }]
         })}\n\n`);
         res.write(`data: ${JSON.stringify({
           id,
@@ -253,37 +369,37 @@ app.post('/v1/chat/completions', async (req, res) => {
   }
 });
 
-// 所有其他请求返回 index.html (SPA 支持)
+// All other requests return index.html (SPA support)
 // Express 5 requires (.*) instead of * for wildcard
 app.get(/(.*)/, (req, res) => {
   res.sendFile(path.join(process.cwd(), 'client/dist', 'index.html'));
 });
 
 const server = app.listen(config.server.port, config.server.host, () => {
-  logger.info(`服务器已启动: ${config.server.host}:${config.server.port}`);
+  logger.info(`Server started: ${config.server.host}:${config.server.port}`);
 });
 
 server.on('error', (error) => {
   if (error.code === 'EADDRINUSE') {
-    logger.error(`端口 ${config.server.port} 已被占用`);
+    logger.error(`Port ${config.server.port} is already in use`);
     process.exit(1);
   } else if (error.code === 'EACCES') {
-    logger.error(`端口 ${config.server.port} 无权限访问`);
+    logger.error(`No permission to access port ${config.server.port}`);
     process.exit(1);
   } else {
-    logger.error('服务器启动失败:', error.message);
+    logger.error('Server startup failed:', error.message);
     process.exit(1);
   }
 });
 
 const shutdown = () => {
-  logger.info('正在关闭服务器...');
+  logger.info('Shutting down server...');
 
-  // 清理空闲管理器
+  // Cleanup idle manager
   idleManager.destroy();
 
   server.close(() => {
-    logger.info('服务器已关闭');
+    logger.info('Server closed');
     process.exit(0);
   });
   setTimeout(() => process.exit(0), 5000);

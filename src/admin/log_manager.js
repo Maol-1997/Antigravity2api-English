@@ -2,14 +2,14 @@ import fs from 'fs/promises';
 import path from 'path';
 
 const LOGS_FILE = path.join(process.cwd(), 'data', 'app_logs.json');
-const MAX_LOGS = 200; // 最多保存 200 条日志（降低内存使用）
+const MAX_LOGS = 200; // Max 200 logs (reduce memory usage)
 
-// 内存缓存，避免频繁读取文件
+// Memory cache, avoid frequent file reads
 let logsCache = null;
 let lastCacheTime = 0;
-const CACHE_DURATION = 30000; // 缓存30秒
+const CACHE_DURATION = 30000; // Cache for 30 seconds
 
-// 确保数据目录存在
+// Ensure data directory exists
 async function ensureDataDir() {
   const dataDir = path.dirname(LOGS_FILE);
   try {
@@ -19,11 +19,11 @@ async function ensureDataDir() {
   }
 }
 
-// 加载日志（带缓存）
+// Load logs (with cache)
 export async function loadLogs() {
   const now = Date.now();
 
-  // 如果缓存有效，直接返回缓存
+  // If cache is valid, return cached data directly
   if (logsCache && (now - lastCacheTime) < CACHE_DURATION) {
     return logsCache;
   }
@@ -44,19 +44,19 @@ export async function loadLogs() {
   }
 }
 
-// 保存日志
+// Save logs
 async function saveLogs(logs) {
   await ensureDataDir();
-  // 只保留最新的日志
+  // Only keep the most recent logs
   const recentLogs = logs.slice(-MAX_LOGS);
   await fs.writeFile(LOGS_FILE, JSON.stringify(recentLogs, null, 2), 'utf-8');
 
-  // 更新缓存
+  // Update cache
   logsCache = recentLogs;
   lastCacheTime = Date.now();
 }
 
-// 添加日志
+// Add log
 export async function addLog(level, message) {
   const logs = await loadLogs();
   logs.push({
@@ -67,12 +67,12 @@ export async function addLog(level, message) {
   await saveLogs(logs);
 }
 
-// 清空日志
+// Clear logs
 export async function clearLogs() {
   await saveLogs([]);
 }
 
-// 获取最近的日志
+// Get recent logs
 export async function getRecentLogs(limit = 100) {
   const logs = await loadLogs();
   return logs.slice(-limit).reverse();

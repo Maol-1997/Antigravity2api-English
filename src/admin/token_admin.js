@@ -6,7 +6,7 @@ import logger from '../utils/logger.js';
 
 const ACCOUNTS_FILE = path.join(process.cwd(), 'data', 'accounts.json');
 
-// 读取所有账号
+// Read all accounts
 export async function loadAccounts() {
   try {
     const data = await fs.readFile(ACCOUNTS_FILE, 'utf-8');
@@ -19,7 +19,7 @@ export async function loadAccounts() {
   }
 }
 
-// 保存账号
+// Save accounts
 async function saveAccounts(accounts) {
   const dir = path.dirname(ACCOUNTS_FILE);
   try {
@@ -30,34 +30,34 @@ async function saveAccounts(accounts) {
   await fs.writeFile(ACCOUNTS_FILE, JSON.stringify(accounts, null, 2), 'utf-8');
 }
 
-// 删除账号
+// Delete account
 export async function deleteAccount(index) {
   const accounts = await loadAccounts();
   if (index < 0 || index >= accounts.length) {
-    throw new Error('无效的账号索引');
+    throw new Error('Invalid account index');
   }
   accounts.splice(index, 1);
   await saveAccounts(accounts);
-  logger.info(`账号 ${index} 已删除`);
+  logger.info(`Account ${index} deleted`);
   return true;
 }
 
-// 启用/禁用账号
+// Enable/disable account
 export async function toggleAccount(index, enable) {
   const accounts = await loadAccounts();
   if (index < 0 || index >= accounts.length) {
-    throw new Error('无效的账号索引');
+    throw new Error('Invalid account index');
   }
   accounts[index].enable = enable;
   await saveAccounts(accounts);
-  logger.info(`账号 ${index} 已${enable ? '启用' : '禁用'}`);
+  logger.info(`Account ${index} ${enable ? 'enabled' : 'disabled'}`);
   return true;
 }
 
-// 触发登录流程
+// Trigger login flow
 export async function triggerLogin() {
   return new Promise((resolve, reject) => {
-    logger.info('启动登录流程...');
+    logger.info('Starting login flow...');
 
     const loginScript = path.join(process.cwd(), 'scripts', 'oauth-server.js');
     const child = spawn('node', [loginScript], {
@@ -87,17 +87,17 @@ export async function triggerLogin() {
 
     child.on('close', (code) => {
       if (code === 0) {
-        logger.info('登录流程完成');
-        resolve({ success: true, authUrl, message: '登录成功' });
+        logger.info('Login flow completed');
+        resolve({ success: true, authUrl, message: 'Login successful' });
       } else {
-        reject(new Error('登录流程失败'));
+        reject(new Error('Login flow failed'));
       }
     });
 
-    // 5 秒后返回授权 URL，不等待完成
+    // Return auth URL after 5 seconds, don't wait for completion
     setTimeout(() => {
       if (authUrl) {
-        resolve({ success: true, authUrl, message: '请在浏览器中完成授权' });
+        resolve({ success: true, authUrl, message: 'Please complete authorization in browser' });
       }
     }, 5000);
 
@@ -107,7 +107,7 @@ export async function triggerLogin() {
   });
 }
 
-// 获取账号统计信息
+// Get account statistics
 export async function getAccountStats() {
   const accounts = await loadAccounts();
   return {
@@ -117,13 +117,13 @@ export async function getAccountStats() {
   };
 }
 
-// 从回调链接手动添加 Token
+// Manually add token from callback URL
 import https from 'https';
 
 const CLIENT_ID = '1071006060591-tmhssin2h21lcre235vtolojh4g403ep.apps.googleusercontent.com';
 const CLIENT_SECRET = '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';
 
-// 获取 Google 账号信息
+// Get Google account info
 export async function getAccountName(accessToken) {
   return new Promise((resolve, reject) => {
     const options = {
@@ -157,21 +157,21 @@ export async function getAccountName(accessToken) {
 }
 
 export async function addTokenFromCallback(callbackUrl) {
-  // 解析回调链接
+  // Parse callback URL
   const url = new URL(callbackUrl);
   const code = url.searchParams.get('code');
   const port = url.port || '80';
 
   if (!code) {
-    throw new Error('回调链接中没有找到授权码 (code)');
+    throw new Error('Authorization code (code) not found in callback URL');
   }
 
-  logger.info(`正在使用授权码换取 Token...`);
+  logger.info(`Exchanging authorization code for token...`);
 
-  // 使用授权码换取 Token
+  // Exchange authorization code for token
   const tokenData = await exchangeCodeForToken(code, port, url.origin);
 
-  // 保存账号
+  // Save account
   const account = {
     access_token: tokenData.access_token,
     refresh_token: tokenData.refresh_token,
@@ -184,8 +184,8 @@ export async function addTokenFromCallback(callbackUrl) {
   accounts.push(account);
   await saveAccounts(accounts);
 
-  logger.info('Token 已成功保存');
-  return { success: true, message: 'Token 已成功添加' };
+  logger.info('Token saved successfully');
+  return { success: true, message: 'Token added successfully' };
 }
 
 function exchangeCodeForToken(code, port, origin) {
@@ -217,8 +217,8 @@ function exchangeCodeForToken(code, port, origin) {
         if (res.statusCode === 200) {
           resolve(JSON.parse(body));
         } else {
-          logger.error(`Token 交换失败: ${body}`);
-          reject(new Error(`Token 交换失败: ${res.statusCode} - ${body}`));
+          logger.error(`Token exchange failed: ${body}`);
+          reject(new Error(`Token exchange failed: ${res.statusCode} - ${body}`));
         }
       });
     });
@@ -229,37 +229,37 @@ function exchangeCodeForToken(code, port, origin) {
   });
 }
 
-// 批量导入 Token
+// Batch import tokens
 export async function importTokens(filePath) {
   try {
-    logger.info('开始导入 Token...');
+    logger.info('Starting token import...');
 
-    // 检查是否是 ZIP 文件
+    // Check if it's a ZIP file
     if (filePath.endsWith('.zip') || true) {
       const zip = new AdmZip(filePath);
       const zipEntries = zip.getEntries();
 
-      // 查找 tokens.json
+      // Find tokens.json
       const tokensEntry = zipEntries.find(entry => entry.entryName === 'tokens.json');
       if (!tokensEntry) {
-        throw new Error('ZIP 文件中没有找到 tokens.json');
+        throw new Error('tokens.json not found in ZIP file');
       }
 
       const tokensContent = tokensEntry.getData().toString('utf8');
       const importedTokens = JSON.parse(tokensContent);
 
-      // 验证数据格式
+      // Validate data format
       if (!Array.isArray(importedTokens)) {
-        throw new Error('tokens.json 格式错误：应该是一个数组');
+        throw new Error('tokens.json format error: should be an array');
       }
 
-      // 加载现有账号
+      // Load existing accounts
       const accounts = await loadAccounts();
 
-      // 添加新账号
+      // Add new accounts
       let addedCount = 0;
       for (const token of importedTokens) {
-        // 检查是否已存在
+        // Check if already exists
         const exists = accounts.some(acc => acc.access_token === token.access_token);
         if (!exists) {
           accounts.push({
@@ -273,28 +273,28 @@ export async function importTokens(filePath) {
         }
       }
 
-      // 保存账号
+      // Save accounts
       await saveAccounts(accounts);
 
-      // 清理上传的文件
+      // Clean up uploaded file
       try {
         await fs.unlink(filePath);
       } catch (e) {
-        logger.warn('清理上传文件失败:', e);
+        logger.warn('Failed to clean up uploaded file:', e);
       }
 
-      logger.info(`成功导入 ${addedCount} 个 Token 账号`);
+      logger.info(`Successfully imported ${addedCount} token accounts`);
       return {
         success: true,
         count: addedCount,
         total: importedTokens.length,
         skipped: importedTokens.length - addedCount,
-        message: `成功导入 ${addedCount} 个 Token 账号${importedTokens.length - addedCount > 0 ? `，跳过 ${importedTokens.length - addedCount} 个重复账号` : ''}`
+        message: `Successfully imported ${addedCount} token accounts${importedTokens.length - addedCount > 0 ? `, skipped ${importedTokens.length - addedCount} duplicate accounts` : ''}`
       };
     }
   } catch (error) {
-    logger.error('导入 Token 失败:', error);
-    // 清理上传的文件
+    logger.error('Failed to import tokens:', error);
+    // Clean up uploaded file
     try {
       await fs.unlink(filePath);
     } catch (e) {}

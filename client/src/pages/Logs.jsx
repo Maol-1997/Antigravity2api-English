@@ -47,7 +47,7 @@ export default function Logs() {
     }, [autoRefresh, adminToken]);
 
     const clearLogs = async () => {
-        if (!confirm('确定要清空日志吗？')) return;
+        if (!confirm('Are you sure you want to clear all logs?')) return;
         try {
             await fetch('/admin/logs', {
                 method: 'DELETE',
@@ -63,8 +63,8 @@ export default function Logs() {
         <div className="space-y-6 h-[calc(100vh-8rem)] flex flex-col">
             <div className="flex justify-between items-center shrink-0">
                 <div>
-                    <h2 className="text-2xl font-semibold text-zinc-900 tracking-tight">系统日志</h2>
-                    <p className="text-zinc-500">查看实时系统运行日志</p>
+                    <h2 className="text-2xl font-semibold text-zinc-900 tracking-tight">System Logs</h2>
+                    <p className="text-zinc-500">View real-time system operation logs</p>
                 </div>
                 <div className="flex gap-2">
                     <button
@@ -77,7 +77,7 @@ export default function Logs() {
                         )}
                     >
                         {autoRefresh ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-                        {autoRefresh ? '自动刷新中' : '自动刷新'}
+                        {autoRefresh ? 'Auto-refreshing' : 'Auto Refresh'}
                     </button>
                     <button
                         onClick={fetchLogs}
@@ -97,7 +97,7 @@ export default function Logs() {
             <div className="flex-1 bg-zinc-950 rounded-2xl border border-zinc-800 overflow-hidden flex flex-col shadow-inner">
                 <div className="flex-1 overflow-y-auto p-4 space-y-1 font-mono text-sm">
                     {logs.length === 0 ? (
-                        <div className="text-zinc-500 text-center py-12">暂无日志</div>
+                        <div className="text-zinc-500 text-center py-12">No logs available</div>
                     ) : (
                         logs.map((log, idx) => (
                             <div key={idx} className="text-zinc-300 break-all hover:bg-white/5 px-2 py-0.5 rounded transition-colors">
