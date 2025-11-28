@@ -155,7 +155,6 @@ function MessageResponse({ children }) {
   )
 }
 
-
 // Suggestions
 function Suggestions({ suggestions, onSelect }) {
   if (!suggestions?.length) return null
@@ -317,7 +316,6 @@ export default function Test() {
       scrollToBottom()
     }
   }, [messages, status, scrollToBottom])
-
 
   // Auto-resize textarea
   useEffect(() => {
@@ -483,9 +481,13 @@ export default function Test() {
       <div className="flex-1 flex flex-col bg-white overflow-hidden">
         {/* Conversation */}
         <div ref={conversationRef} className="chat-conversation relative">
-          <div className="chat-conversation-content max-w-4xl mx-auto w-full">
+          <div
+            className={`chat-conversation-content max-w-4xl mx-auto w-full ${
+              messages.length === 0 ? 'justify-center' : ''
+            }`}
+          >
             {messages.length === 0 && (
-              <div className="chat-empty-state justify-self-center">
+              <div className="chat-empty-state">
                 <Bot className="chat-empty-state-icon" />
                 <h3 className="chat-empty-state-title">Start a conversation</h3>
                 <p className="chat-empty-state-description">
@@ -535,7 +537,6 @@ export default function Test() {
             })}
             <div ref={messagesEndRef} />
           </div>
-
         </div>
 
         {/* Input Area */}
