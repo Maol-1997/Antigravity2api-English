@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Plus, RefreshCw, Trash2, Power, LogIn, Upload, Download,
-    CheckCircle2, XCircle, Search, MoreVertical, AlertCircle
+    CheckCircle2, XCircle, Search, MoreVertical, AlertCircle, BarChart3, ChevronDown, ChevronUp
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { cn } from '../lib/utils';
@@ -18,6 +18,9 @@ export default function Tokens() {
     const [isLoggingIn, setIsLoggingIn] = useState(false);
     const [isExporting, setIsExporting] = useState(false);
     const [isImporting, setIsImporting] = useState(false);
+    const [expandedQuotas, setExpandedQuotas] = useState(new Set());
+    const [quotaData, setQuotaData] = useState({});
+    const [loadingQuotas, setLoadingQuotas] = useState(new Set());
 
     const fetchTokens = async () => {
         setIsLoading(true);
@@ -233,6 +236,63 @@ export default function Tokens() {
         input.click();
     };
 
+    const toggleQuota = async (index) => {
+        const newExpanded = new Set(expandedQuotas);
+        if (newExpanded.has(index)) {
+            newExpanded.delete(index);
+            setExpandedQuotas(newExpanded);
+        } else {
+            newExpanded.add(index);
+            setExpandedQuotas(newExpanded);
+            // Load quota if not loaded
+            if (!quotaData[index]) {
+                await loadQuota(index);
+            }
+        }
+    };
+
+    const loadQuota = async (index, forceRefresh = false) => {
+        const newLoading = new Set(loadingQuotas);
+        newLoading.add(index);
+        setLoadingQuotas(newLoading);
+
+        try {
+            const url = forceRefresh
+                ? `/admin/tokens/${index}/quotas?refresh=true`
+                : `/admin/tokens/${index}/quotas`;
+            const res = await fetch(url, {
+                headers: { 'X-Admin-Token': adminToken }
+            });
+            const data = await res.json();
+            if (data.success) {
+                setQuotaData(prev => ({
+                    ...prev,
+                    [index]: data.data
+                }));
+            } else {
+                setMessage({ type: 'error', content: `Failed to load quota: ${data.error}` });
+            }
+        } catch (error) {
+            setMessage({ type: 'error', content: `Failed to load quota: ${error.message}` });
+        } finally {
+            const updatedLoading = new Set(loadingQuotas);
+            updatedLoading.delete(index);
+            setLoadingQuotas(updatedLoading);
+        }
+    };
+
+    const getQuotaColor = (remaining) => {
+        if (remaining > 0.5) return 'bg-emerald-500';
+        if (remaining > 0.2) return 'bg-amber-500';
+        return 'bg-red-500';
+    };
+
+    const getQuotaBgColor = (remaining) => {
+        if (remaining > 0.5) return 'bg-emerald-100';
+        if (remaining > 0.2) return 'bg-amber-100';
+        return 'bg-red-100';
+    };
+
     return (
         <div className="space-y-6">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-2">
@@ -395,6 +455,13 @@ export default function Tokens() {
                                     </div>
                                     <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                         <button
+                                            onClick={() => toggleQuota(t.index)}
+                                            className="p-2.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                            title="View Quota"
+                                        >
+                                            <BarChart3 className="w-4 h-4" />
+                                        </button>
+                                        <button
                                             onClick={() => toggleToken(t.index, !t.enable)}
                                             className={cn(
                                                 "p-2.5 rounded-lg transition-colors",
@@ -413,6 +480,84 @@ export default function Tokens() {
                                         </button>
                                     </div>
                                 </div>
+
+                                {/* Quota Panel */}
+                                <AnimatePresence>
+                                    {expandedQuotas.has(t.index) && (
+                                        <motion.div
+                                            initial={{ opacity: 0, height: 0 }}
+                                            animate={{ opacity: 1, height: 'auto' }}
+                                            exit={{ opacity: 0, height: 0 }}
+                                            className="mt-4 ml-9 overflow-hidden"
+                                        >
+                                            <div className="bg-zinc-50 rounded-xl p-4 border border-zinc-200">
+                                                <div className="flex items-center justify-between mb-3">
+                                                    <h4 className="text-sm font-semibold text-zinc-700 flex items-center gap-2">
+                                                        <BarChart3 className="w-4 h-4" />
+                                                        Model Quotas
+                                                    </h4>
+                                                    <button
+                                                        onClick={() => loadQuota(t.index, true)}
+                                                        disabled={loadingQuotas.has(t.index)}
+                                                        className="text-xs text-blue-600 hover:text-blue-700 flex items-center gap-1"
+                                                    >
+                                                        <RefreshCw className={cn("w-3 h-3", loadingQuotas.has(t.index) && "animate-spin")} />
+                                                        Refresh
+                                                    </button>
+                                                </div>
+
+                                                {loadingQuotas.has(t.index) ? (
+                                                    <div className="flex items-center justify-center py-8">
+                                                        <RefreshCw className="w-5 h-5 text-zinc-400 animate-spin" />
+                                                        <span className="ml-2 text-sm text-zinc-500">Loading quotas...</span>
+                                                    </div>
+                                                ) : quotaData[t.index] ? (
+                                                    <div className="space-y-3">
+                                                        {Object.entries(quotaData[t.index].models).length === 0 ? (
+                                                            <p className="text-sm text-zinc-500 text-center py-4">No quota information available</p>
+                                                        ) : (
+                                                            Object.entries(quotaData[t.index].models)
+                                                                .sort(([a], [b]) => a.localeCompare(b))
+                                                                .map(([modelId, data]) => (
+                                                                    <div key={modelId} className="space-y-1">
+                                                                        <div className="flex items-center justify-between text-xs">
+                                                                            <span className="font-medium text-zinc-700 truncate max-w-[200px]" title={modelId}>
+                                                                                {modelId}
+                                                                            </span>
+                                                                            <span className="text-zinc-500 flex items-center gap-2">
+                                                                                <span className={cn(
+                                                                                    "font-semibold",
+                                                                                    data.remaining > 0.5 ? "text-emerald-600" :
+                                                                                    data.remaining > 0.2 ? "text-amber-600" : "text-red-600"
+                                                                                )}>
+                                                                                    {(data.remaining * 100).toFixed(1)}%
+                                                                                </span>
+                                                                                <span className="text-zinc-400">|</span>
+                                                                                <span>Reset: {data.resetTime}</span>
+                                                                            </span>
+                                                                        </div>
+                                                                        <div className={cn("h-2 rounded-full overflow-hidden", getQuotaBgColor(data.remaining))}>
+                                                                            <div
+                                                                                className={cn("h-full rounded-full transition-all duration-300", getQuotaColor(data.remaining))}
+                                                                                style={{ width: `${(data.remaining * 100).toFixed(1)}%` }}
+                                                                            />
+                                                                        </div>
+                                                                    </div>
+                                                                ))
+                                                        )}
+                                                        {quotaData[t.index].lastUpdated && (
+                                                            <p className="text-xs text-zinc-400 mt-3 pt-2 border-t border-zinc-200">
+                                                                Last updated: {new Date(quotaData[t.index].lastUpdated).toLocaleString()}
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                ) : (
+                                                    <p className="text-sm text-zinc-500 text-center py-4">Click refresh to load quota data</p>
+                                                )}
+                                            </div>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
                             </motion.div>
                         ))}
                     </div>

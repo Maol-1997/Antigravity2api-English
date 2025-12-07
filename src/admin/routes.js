@@ -8,6 +8,8 @@ import { loadAccounts, deleteAccount, toggleAccount, triggerLogin, getAccountSta
 import { createSession, validateSession, destroySession, verifyPassword, adminAuth } from './session.js';
 import { loadSettings, saveSettings } from './settings_manager.js';
 import tokenManager from '../auth/token_manager.js';
+import quotaManager from '../auth/quota_manager.js';
+import { getModelsWithQuotas } from '../api/client.js';
 
 // Configure file upload
 const upload = multer({ dest: 'uploads/' });
@@ -363,6 +365,73 @@ router.post('/tokens/import', upload.single('file'), async (req, res) => {
     res.json(result);
   } catch (error) {
     await addLog('error', `Import failed: ${error.message}`);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get quota information for a token
+router.get('/tokens/:index/quotas', async (req, res) => {
+  try {
+    const index = parseInt(req.params.index);
+    const forceRefresh = req.query.refresh === 'true';
+    const accounts = await loadAccounts();
+
+    if (index < 0 || index >= accounts.length) {
+      return res.status(404).json({ error: 'Token not found' });
+    }
+
+    const account = accounts[index];
+
+    // Check cache first (skip if force refresh)
+    if (!forceRefresh) {
+      let cachedQuota = quotaManager.getQuota(account.refresh_token);
+      if (cachedQuota) {
+        // Format for response
+        const formattedModels = {};
+        Object.entries(cachedQuota.models).forEach(([modelId, data]) => {
+          formattedModels[modelId] = {
+            remaining: data.remaining,
+            resetTime: quotaManager.formatResetTime(data.resetTime),
+            resetTimeRaw: data.resetTime
+          };
+        });
+
+        return res.json({
+          success: true,
+          cached: true,
+          data: {
+            lastUpdated: cachedQuota.lastUpdated,
+            models: formattedModels
+          }
+        });
+      }
+    }
+
+    // Fetch fresh quota data
+    const quotas = await getModelsWithQuotas(account);
+
+    // Save to cache
+    quotaManager.updateQuota(account.refresh_token, quotas);
+
+    // Format for response
+    const formattedModels = {};
+    Object.entries(quotas).forEach(([modelId, data]) => {
+      formattedModels[modelId] = {
+        remaining: data.remaining,
+        resetTime: quotaManager.formatResetTime(data.resetTime),
+        resetTimeRaw: data.resetTime
+      };
+    });
+
+    res.json({
+      success: true,
+      cached: false,
+      data: {
+        lastUpdated: Date.now(),
+        models: formattedModels
+      }
+    });
+  } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });

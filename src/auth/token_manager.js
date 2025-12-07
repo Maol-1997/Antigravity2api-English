@@ -2,12 +2,17 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { log } from '../utils/logger.js';
+import config from '../config/config.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const CLIENT_ID = '1071006060591-tmhssin2h21lcre235vtolojh4g403ep.apps.googleusercontent.com';
 const CLIENT_SECRET = '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';
+
+function generateSessionId() {
+  return String(-Math.floor(Math.random() * 9e18));
+}
 
 class TokenManager {
   constructor(filePath = path.join(__dirname,'..','..','data' ,'accounts.json')) {
@@ -35,7 +40,10 @@ class TokenManager {
       const data = fs.readFileSync(this.filePath, 'utf8');
       const tokenArray = JSON.parse(data);
       this.cachedData = tokenArray; // Cache raw data
-      this.tokens = tokenArray.filter(token => token.enable !== false);
+      this.tokens = tokenArray.filter(token => token.enable !== false).map(token => ({
+        ...token,
+        sessionId: generateSessionId()
+      }));
       this.currentIndex = 0;
       this.lastLoadTime = Date.now();
       log.info(`Successfully loaded ${this.tokens.length} available tokens`);
@@ -48,6 +56,27 @@ class TokenManager {
       log.error('Failed to load tokens:', error.message);
       this.tokens = [];
     }
+  }
+
+  async fetchProjectId(token) {
+    const response = await fetch('https://daily-cloudcode-pa.sandbox.googleapis.com/v1internal:loadCodeAssist', {
+      method: 'POST',
+      headers: {
+        'Host': 'daily-cloudcode-pa.sandbox.googleapis.com',
+        'User-Agent': config.api?.userAgent || 'antigravity/1.11.3 windows/amd64',
+        'Authorization': `Bearer ${token.access_token}`,
+        'Content-Type': 'application/json',
+        'Accept-Encoding': 'gzip'
+      },
+      body: JSON.stringify({ metadata: { ideType: 'ANTIGRAVITY' } })
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to fetch projectId: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data?.cloudaicompanionProject;
   }
 
   loadQuotaCooldowns() {
@@ -213,6 +242,28 @@ class TokenManager {
         if (this.isExpired(token)) {
           await this.refreshToken(token);
         }
+
+        // Fetch projectId if not present
+        if (!token.projectId) {
+          try {
+            log.info(`Fetching projectId for Token #${tokenIndex}...`);
+            const projectId = await this.fetchProjectId(token);
+            if (projectId === undefined) {
+              log.warn(`Token #${tokenIndex}: No permission to get projectId, disabling`);
+              this.disableToken(token);
+              if (this.tokens.length === 0) return null;
+              continue;
+            }
+            token.projectId = projectId;
+            this.saveToFile();
+            log.info(`Token #${tokenIndex}: Got projectId: ${projectId}`);
+          } catch (fetchError) {
+            log.error(`Token #${tokenIndex}: Failed to fetch projectId:`, fetchError.message);
+            this.currentIndex = (this.currentIndex + 1) % this.tokens.length;
+            continue;
+          }
+        }
+
         this.currentIndex = (this.currentIndex + 1) % this.tokens.length;
 
         // Record usage stats

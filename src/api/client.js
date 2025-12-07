@@ -1,12 +1,22 @@
 import tokenManager from '../auth/token_manager.js';
 import config from '../config/config.js';
+import { generateRequestBody } from '../utils/utils.js';
 
-export async function generateAssistantResponse(requestBody, callback, isImageModel = false, model = null) {
+export async function generateAssistantResponse(requestParams, callback, isImageModel = false, model = null) {
   const token = await tokenManager.getToken(model);
 
   if (!token) {
     throw new Error('No available token, please run npm run login to get token');
   }
+
+  // Generate request body with token's projectId and sessionId
+  const requestBody = generateRequestBody(
+    requestParams.messages,
+    requestParams.model,
+    requestParams.params,
+    requestParams.tools,
+    token
+  );
 
   // Use different endpoint for image models
   const url = isImageModel ? config.api.imageUrl : config.api.url;
@@ -165,11 +175,44 @@ export async function getAvailableModels() {
 
   return {
     object: 'list',
-    data: Object.keys(data.models).map(id => ({
+    data: Object.keys(data.models).sort().map(id => ({
       id,
       object: 'model',
       created: Math.floor(Date.now() / 1000),
       owned_by: 'google'
     }))
   };
+}
+
+export async function getModelsWithQuotas(token) {
+  const response = await fetch(config.api.modelsUrl, {
+    method: 'POST',
+    headers: {
+      'Host': config.api.host,
+      'User-Agent': config.api.userAgent,
+      'Authorization': `Bearer ${token.access_token}`,
+      'Content-Type': 'application/json',
+      'Accept-Encoding': 'gzip'
+    },
+    body: JSON.stringify({})
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Failed to get models with quotas (${response.status}): ${errorText}`);
+  }
+
+  const data = await response.json();
+
+  const quotas = {};
+  Object.entries(data.models || {}).forEach(([modelId, modelData]) => {
+    if (modelData.quotaInfo) {
+      quotas[modelId] = {
+        remaining: modelData.quotaInfo.remainingFraction,
+        resetTime: modelData.quotaInfo.resetTime
+      };
+    }
+  });
+
+  return quotas;
 }

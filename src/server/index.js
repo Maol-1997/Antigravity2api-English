@@ -3,7 +3,6 @@ import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { generateAssistantResponse, getAvailableModels } from '../api/client.js';
-import { generateRequestBody } from '../utils/utils.js';
 import logger from '../utils/logger.js';
 import config from '../config/config.js';
 import adminRoutes, { incrementRequestCount, addLog } from '../admin/routes.js';
@@ -148,10 +147,8 @@ app.post('/v1/chat/completions', async (req, res) => {
       stream = false;
     }
 
-    const authHeader = req.headers.authorization;
-    const apiKey = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : authHeader;
-
-    const requestBody = generateRequestBody(messages, model, params, tools, apiKey);
+    // Prepare request parameters for client
+    const requestParams = { messages, model, params, tools };
 
     // Check if this is an image model
     const isImageModel = model.includes('image');
@@ -169,7 +166,7 @@ app.post('/v1/chat/completions', async (req, res) => {
       let inThinkBlock = false;
       let thinkBuffer = '';
 
-      await generateAssistantResponse(requestBody, (data) => {
+      await generateAssistantResponse(requestParams, (data) => {
         if (data.type === 'tool_calls') {
           hasToolCall = true;
           res.write(`data: ${JSON.stringify({
@@ -294,7 +291,7 @@ app.post('/v1/chat/completions', async (req, res) => {
       let toolCalls = [];
       let inThinkBlock = false;
 
-      await generateAssistantResponse(requestBody, (data) => {
+      await generateAssistantResponse(requestParams, (data) => {
         if (data.type === 'tool_calls') {
           toolCalls = data.tool_calls;
         } else if (data.type === 'thinking') {

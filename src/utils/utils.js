@@ -4,19 +4,6 @@ import config from '../config/config.js';
 function generateRequestId() {
   return `agent-${randomUUID()}`;
 }
-
-function generateSessionId() {
-  return String(-Math.floor(Math.random() * 9e18));
-}
-
-function generateProjectId() {
-  const adjectives = ['useful', 'bright', 'swift', 'calm', 'bold'];
-  const nouns = ['fuze', 'wave', 'spark', 'flow', 'core'];
-  const randomAdj = adjectives[Math.floor(Math.random() * adjectives.length)];
-  const randomNoun = nouns[Math.floor(Math.random() * nouns.length)];
-  const randomNum = Math.random().toString(36).substring(2, 7);
-  return `${randomAdj}-${randomNoun}-${randomNum}`;
-}
 function extractImagesFromContent(content) {
   const result = { text: '', images: [] };
 
@@ -186,9 +173,16 @@ function generateGenerationConfig(parameters, enableThinking, actualModelName) {
     ]
   }
 
-  // Enable image generation for image models (Nano Banana)
+  // Enable image generation for image models
   if (actualModelName.includes('image')) {
     generationConfig.responseModalities = ["TEXT", "IMAGE"];
+    // 4K resolution only for gemini-3-pro-image
+    if (actualModelName.includes('gemini-3-pro-image')) {
+      generationConfig.imageConfig = {
+        aspectRatio: "5:4",
+        imageSize: "4K"
+      };
+    }
   }
 
   if (enableThinking) {
@@ -218,53 +212,32 @@ function convertOpenAIToolsToAntigravity(openaiTools) {
     }
   })
 }
-const idCache = new Map();
-const SESSION_ID_DURATION = 60 * 60 * 1000; // 1 hour
-const PROJECT_ID_DURATION = 12 * 60 * 60 * 1000; // 12 hours
-
-function getCachedIds(apiKey) {
-  const now = Date.now();
-  let cache = idCache.get(apiKey);
-
-  if (!cache) {
-    cache = {
-      projectId: generateProjectId(),
-      projectExpiry: now + PROJECT_ID_DURATION,
-      sessionId: generateSessionId(),
-      sessionExpiry: now + SESSION_ID_DURATION
-    };
-    idCache.set(apiKey, cache);
-    return cache;
+function modelMapping(modelName) {
+  if (modelName === "claude-sonnet-4-5-thinking") {
+    return "claude-sonnet-4-5";
+  } else if (modelName === "claude-opus-4-5") {
+    return "claude-opus-4-5-thinking";
+  } else if (modelName === "gemini-2.5-flash-thinking") {
+    return "gemini-2.5-flash";
   }
-
-  if (now > cache.projectExpiry) {
-    cache.projectId = generateProjectId();
-    cache.projectExpiry = now + PROJECT_ID_DURATION;
-  }
-
-  if (now > cache.sessionExpiry) {
-    cache.sessionId = generateSessionId();
-    cache.sessionExpiry = now + SESSION_ID_DURATION;
-  }
-
-  return cache;
+  return modelName;
 }
 
-function generateRequestBody(openaiMessages, modelName, parameters, openaiTools, apiKey) {
-  const enableThinking = modelName.endsWith('-thinking') ||
+function isEnableThinking(modelName) {
+  return modelName.endsWith('-thinking') ||
     modelName === 'gemini-2.5-pro' ||
     modelName === 'gemini-2.5-pro-image' ||
     modelName.startsWith('gemini-3-pro-') ||
     modelName === "rev19-uic3-1p" ||
     modelName === "gpt-oss-120b-medium"
-  const actualModelName = modelName.endsWith('-thinking') ? modelName.slice(0, -9) : modelName;
+}
 
-  // Use a default key if none provided (though it should be provided by the server)
-  const cacheKey = apiKey || 'default';
-  const { projectId, sessionId } = getCachedIds(cacheKey);
+function generateRequestBody(openaiMessages, modelName, parameters, openaiTools, token) {
+  const enableThinking = isEnableThinking(modelName);
+  const actualModelName = modelMapping(modelName);
 
   return {
-    project: projectId,
+    project: token.projectId,
     requestId: generateRequestId(),
     request: {
       contents: openaiMessageToAntigravity(openaiMessages),
@@ -272,14 +245,14 @@ function generateRequestBody(openaiMessages, modelName, parameters, openaiTools,
         role: "user",
         parts: [{ text: config.systemInstruction }]
       },
-      tools: convertOpenAIToolsToAntigravity(openaiTools),
+      tools: [{ google_search: {} }, ...convertOpenAIToolsToAntigravity(openaiTools)],
       toolConfig: {
         functionCallingConfig: {
           mode: "VALIDATED"
         }
       },
       generationConfig: generateGenerationConfig(parameters, enableThinking, actualModelName),
-      sessionId: sessionId
+      sessionId: token.sessionId
     },
     model: actualModelName,
     userAgent: "antigravity"
@@ -287,7 +260,5 @@ function generateRequestBody(openaiMessages, modelName, parameters, openaiTools,
 }
 export {
   generateRequestId,
-  generateSessionId,
-  generateProjectId,
   generateRequestBody
 }
